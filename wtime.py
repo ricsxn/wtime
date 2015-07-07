@@ -120,7 +120,7 @@ class wtime:
 	def __str__(self):
 		self.calc()
 		if self.overtime == True:
-			remaining_or_overtime="Overtime      : %s\n" % self.getOverTime()
+			remaining_or_overtime="Overtime      : %s " % self.getOverTime()
 		else:
 			remaining_or_overtime="Remaining time: %s " % self.getRemainingTime()
 		return ("----------------------------\n"
