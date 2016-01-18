@@ -161,45 +161,74 @@ def printTimeDelta(delay):
     return out
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 1:
         print "Usage wtime2 t1 [[[t2] t3] t4]"
         print "Where tx in the form HH:MM[:SS]"
-    else:
-        # wtime params
-        t1 = t2 = t3 = t4 = None
-        try:
-            t1 = sys.argv[1]
-            t2 = sys.argv[2]
-            t3 = sys.argv[3]
-            t4 = sys.argv[4]
-        except:
-            pass
-
+        sys.exit(1)
+    # wtime params
+    t1 = t2 = t3 = t4 = None
+    try:
+        t1 = sys.argv[1]
+        t2 = sys.argv[2]
+        t3 = sys.argv[3]
+        t4 = sys.argv[4]
+    except:
+        pass
+    now=dt.datetime.now()
     if t1 is None:
         print "You must specify at least one time stamp in HH:MM:SS format"
         sys.exit(1)
-	
     t1h, t1m, t1s = getTsHMS(t1)
     if t1h is None or t1m is None:
-        print "t1 does not seem a valid time value, please specify a valit timestamp in HH:MM:SS format"
+        print "t1 does not seem a valid time value, please specify a valid timestamp in HH:MM:SS format"
         sys.exit(1)
-
+    #dt1=dt.datetime(now.year,now.month,now.day,t1h,t1m,t1s)
+    dt1=dt.timedelta(0,t1h*3600+t1m*60+t1s)
     t2h, t2m, t2s = getTsHMS(t2)
+    if t2h is None or t2m is None:
+        t2h=now.hour
+        t2m=now.minute
+        t2s=now.second
+    #dt2=dt.datetime(now.year,now.month,now.day,t2h,t2m,t2s)
+    dt2=dt.timedelta(0,t2h*3600+t2m*60+t2s)
     t3h, t3m, t3s = getTsHMS(t3)
+    if t3h is None or t3m is None:
+        t3h=now.hour
+        t3m=now.minute
+        t3s=now.second      
+    #dt3=dt.datetime(now.year,now.month,now.day,t3h,t3m,t3s)
+    dt3=dt.timedelta(0,t3h*3600+t3m*60+t3s)
     t4h, t4m, t4s = getTsHMS(t4)
-
-#wt = wtime([t1h,t1m,t1s]
-#		  ,[t2h,t2m,t2s]
-#		  ,[t3h,t3m,t3s]
-#		  ,[t4h,t4m,t4s])
-#print wt
-
-    now=dt.datetime.now()
-    dt1=dt.datetime(now.year,now.month,now.day,t1h,t1m,t1s)
-    dt2=dt.datetime(now.year,now.month,now.day,t2h,t2m,t2s)
-    dt3=dt.datetime(now.year,now.month,now.day,t3h,t3m,t3s)
-    dt4=dt.datetime(now.year,now.month,now.day,t4h,t4m,t4s)
-
-    print printTimeDelta((dt2-dt1)+(dt4-dt3))
+    if t4h is None or t4m is None:
+        t4h=now.hour
+        t4m=now.minute
+        t4s=now.second
+    #dt4=dt.datetime(now.year,now.month,now.day,t4h,t4m,t4s)
+    dt4=dt.timedelta(0,t4h*3600+t4m*60+t4s)
+    dtw=dt.timedelta(0,7*3600+12*60)
+    dtp=dt.timedelta(0,0*3600+30*60)
+    dtm=dt2-dt1 # delta time morning
+    dta=dt4-dt3 # delta time afternoon
+    print "T1            : %02d:%02d:%02d" % (t1h,t1m,t1s)
+    print "T2            : %02d:%02d:%02d T2-T1: %s" % (t2h,t2m,t2s,printTimeDelta(dtm))
+    print "T3            : %02d:%02d:%02d" % (t3h,t3m,t3s)
+    print "T4            : %02d:%02d:%02d T4-T3: %s" % (t4h,t4m,t4s,printTimeDelta(dta))
+    print "Total time    : %s" % printTimeDelta(dtm+dta)
+    print "Total time*   : %s" % printTimeDelta(dtm+dta-dtp)
+    print "Pause time    : %s" % printTimeDelta(dtp)
+    print "Time to reach : %s" % printTimeDelta(dtw) 
+    if dtw > (dtm+dta):
+        print "Time to go    : %s" % printTimeDelta(dtw-(dtm+dta))
+        print "        at    : %s" % printTimeDelta(dt1+(dt3-dt2)+dtw) 
+    else:
+        print "Overtime      : %s" % printTimeDelta((dtm+dta)-dtw)
+    if (dtw+dtp) > (dtm+dta):
+        print "Time to go*   : %s" % printTimeDelta((dtw+dtp)-(dtm+dta))
+        print "        at    : %s" % printTimeDelta(dt1+(dt3-dt2)+(dtw+dtp))
+    else:
+        print "Overtime*   : %s" % printTimeDelta((dtm+dta)-(dtw+dtp))
+    print "* Consider this time in case:"
+    print "  1) t2 goes before 12:30:"
+    print "  2) t2 is empty"
     sys.exit(0)
 
