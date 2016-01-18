@@ -209,6 +209,7 @@ if __name__ == "__main__":
     dtp=dt.timedelta(0,0*3600+30*60)
     dtm=dt2-dt1 # delta time morning
     dta=dt4-dt3 # delta time afternoon
+    did=dt3-dt2 # delta idle time
     print "T1            : %02d:%02d:%02d" % (t1h,t1m,t1s)
     print "T2            : %02d:%02d:%02d T2-T1: %s" % (t2h,t2m,t2s,printTimeDelta(dtm))
     print "T3            : %02d:%02d:%02d" % (t3h,t3m,t3s)
@@ -216,7 +217,8 @@ if __name__ == "__main__":
     print "Total time    : %s" % printTimeDelta(dtm+dta)
     print "Total time*   : %s" % printTimeDelta(dtm+dta-dtp)
     print "Pause time    : %s" % printTimeDelta(dtp)
-    print "Time to reach : %s" % printTimeDelta(dtw) 
+    print "Time to reach : %s" % printTimeDelta(dtw)
+    print "Idle time     : %s" % printTimeDelta(did)
     if dtw > (dtm+dta):
         print "Time to go    : %s" % printTimeDelta(dtw-(dtm+dta))
         print "        at    : %s" % printTimeDelta(dt1+(dt3-dt2)+dtw) 
