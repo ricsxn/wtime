@@ -205,8 +205,10 @@ if __name__ == "__main__":
         t4s=now.second
     #dt4=dt.datetime(now.year,now.month,now.day,t4h,t4m,t4s)
     dt4=dt.timedelta(0,t4h*3600+t4m*60+t4s)
+    dtn=dt.timedelta(0,now.hour*3600+now.minute*60+now.second)
     dtw=dt.timedelta(0,7*3600+12*60)
     dtp=dt.timedelta(0,0*3600+30*60)
+    dtk=dt.timedelta(0,6*3600+30*60)
     dtm=dt2-dt1 # delta time morning
     dta=dt4-dt3 # delta time afternoon
     did=dt3-dt2 # delta idle time
@@ -214,23 +216,31 @@ if __name__ == "__main__":
     print "T2            : %02d:%02d:%02d T2-T1: %s" % (t2h,t2m,t2s,printTimeDelta(dtm))
     print "T3            : %02d:%02d:%02d" % (t3h,t3m,t3s)
     print "T4            : %02d:%02d:%02d T4-T3: %s" % (t4h,t4m,t4s,printTimeDelta(dta))
-    print "Total time    : %s" % printTimeDelta(dtm+dta)
-    print "Total time*   : %s" % printTimeDelta(dtm+dta-dtp)
-    print "Pause time    : %s" % printTimeDelta(dtp)
-    print "Time to reach : %s" % printTimeDelta(dtw)
-    print "Idle time     : %s" % printTimeDelta(did)
-    if dtw > (dtm+dta):
-        print "Time to go    : %s" % printTimeDelta(dtw-(dtm+dta))
-        print "        at    : %s" % printTimeDelta(dt1+(dt3-dt2)+dtw) 
+    if did > dt.timedelta(seconds=0):
+        print "Pause time    : %s" % printTimeDelta(did)
+        print "Total time    : %s" % printTimeDelta(dtm+dta)
     else:
-        print "Overtime      : %s" % printTimeDelta((dtm+dta)-dtw)
-    if (dtw+dtp) > (dtm+dta):
-        print "Time to go*   : %s" % printTimeDelta((dtw+dtp)-(dtm+dta))
-        print "        at    : %s" % printTimeDelta(dt1+(dt3-dt2)+(dtw+dtp))
+        print "Pause time    : %s" % printTimeDelta(dtp)
+        print "Total time    : %s" % printTimeDelta(dtm+dta-dtp)
+    if did > dt.timedelta(seconds=0):
+        if dtw > (dtm+dta):
+            print "Time to reach : %s" % printTimeDelta(dtw)
+            print "Time remaining: %s" % printTimeDelta(dtw-(dtm+dta))
+            print "            at: %s" % printTimeDelta(dt1+(dt3-dt2)+dtw)
+        else:
+            print "Overtime      : %s" % printTimeDelta((dtm+dta)-dtw)
+    else:    
+        if (dtw+dtp) > (dtm+dta):
+            print "Time to reach : %s" % printTimeDelta(dtw)
+            print "Time remaining: %s" % printTimeDelta((dtw+dtp)-(dtm+dta))
+            print "            at: %s" % printTimeDelta(dt1+(dt3-dt2)+(dtw+dtp))
+        else: 
+            print "Overtime*   : %s" % printTimeDelta((dtm+dta)-(dtw+dtp))
+    if dtm+dta >= dtk:
+        print "Ticket reached"
     else:
-        print "Overtime*   : %s" % printTimeDelta((dtm+dta)-(dtw+dtp))
-    print "* Consider this time in case:"
-    print "  1) t2 goes before 12:30:"
-    print "  2) t2 is empty"
+        print "Ticket remain : %s" % printTimeDelta(dtk-(dtm+dta))
+        print "          at  : %s" % printTimeDelta(dtn+dtk-(dtm+dta))
+    print "Ticket time   : %s" % printTimeDelta(dtk)
     sys.exit(0)
 
