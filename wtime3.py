@@ -230,7 +230,6 @@ class wtime:
         if t1h is None or t1m is None:
             print "t1 does not seem a valid time value, please specify a valid timestamp in HH:MM:SS format"
             sys.exit(1)
-        #dt1=dt.datetime(now.year,now.month,now.day,t1h,t1m,t1s)
         dt1=dt.timedelta(0,t1h*3600+t1m*60+t1s)
         if self.t2 is not None:
             t2h = self.t2.hour
@@ -240,7 +239,6 @@ class wtime:
             t2h = now.hour
             t2m = now.minute
             t2s = now.second
-        #dt2=dt.datetime(now.year,now.month,now.day,t2h,t2m,t2s)
         dt2=dt.timedelta(0,t2h*3600+t2m*60+t2s)
         if self.t3 is not None:
             t3h = self.t3.hour
@@ -250,7 +248,6 @@ class wtime:
             t3h=now.hour
             t3m=now.minute
             t3s=now.second      
-        #dt3=dt.datetime(now.year,now.month,now.day,t3h,t3m,t3s)
         dt3=dt.timedelta(0,t3h*3600+t3m*60+t3s)
         if self.t4 is not None:
             t4h = self.t4.hour
@@ -260,7 +257,6 @@ class wtime:
             t4h=now.hour
             t4m=now.minute
             t4s=now.second
-        #dt4=dt.datetime(now.year,now.month,now.day,t4h,t4m,t4s)
         dt4=dt.timedelta(0, t4h*3600+t4m*60+t4s)
         dtn=dt.timedelta(0, now.hour*3600+now.minute*60+now.second)
         dtw=dt.timedelta(0, def_worktime[0]*3600 +
@@ -298,20 +294,39 @@ class wtime:
                 out["time to reach"] = "%s" % self.printTimeDelta(dtw)
                 out["time remaining"] = "%s" % self.printTimeDelta(dtw-(dtm+dta))
                 out["time remaining at"] = "%s" % self.printTimeDelta(dt1+(dt3-dt2)+dtw)
+                tmr = dtw-(dtm+dta)
+                tma = dt1+(dt3-dt2)+dtw
+                tmrsec = tmr.seconds + tmr.days * 24 * 3600
+                tmasec = tma.seconds + tma.days * 24 * 3600
+                out["time remaining perc"] = 100*(tmasec-tmrsec)/tmasec
             else:
                 out["overtime"] = "%s" % self.printTimeDelta((dtm+dta)-dtw)
-        else:    
+                out["time remaining perc"] = 100
+        else:                
             if (dtw+dtp) > (dtm+dta):
                 out["time to reach"] = "%s" % self.printTimeDelta(dtw)
                 out["time remaining"] = "%s" % self.printTimeDelta((dtw+dtp)-(dtm+dta))
                 out["time remaining at"] = "%s" % self.printTimeDelta(dt1+(dt3-dt2)+(dtw+dtp))
+                tmr = (dtw+dtp)-(dtm+dta)
+                tma = dt1+(dt3-dt2)+(dtw+dtp)
+                tmrsec = tmr.seconds + tmr.days * 24 * 3600
+                tmasec = tma.seconds + tma.days * 24 * 3600
+                out["time remaining perc"] = 100*(tmasec-tmrsec)/tmasec
             else: 
                 out["overtime"] = "%s" % self.printTimeDelta((dtm+dta)-(dtw+dtp))
+                out["time to reach"] = "reached"
+                out["time remaining perc"] = 100
         if dtm+dta >= dtk:
-            out["ticket time"] = "reached"
+            out["ticket remaining"] = "reached"
+            out["ticket remaining perc"] = 100
         else:
             out["ticket remaining"] = "%s" % self.printTimeDelta(dtk-(dtm+dta))
             out["ticket remaining at"] = "%s" % self.printTimeDelta(dtn+dtk-(dtm+dta))
+            tkr = dtk-(dtm+dta)
+            tka = dtn+dtk-(dtm+dta)
+            tmrsec = tkr.seconds + tkr.days * 24 * 3600
+            tmasec = tka.seconds + tka.days * 24 * 3600
+            out["ticket remaining perc"] = 100*(tmasec-tmrsec)/tmasec
         out["ticket time"] = "%s" % self.printTimeDelta(dtk)
         return out
 
@@ -329,16 +344,16 @@ class wtime:
             print "Total time    : %s" % out["total time"]
         else:
             print "Consume pause : %s to go" % consuming
-
-        print "Time to reach : %s" % out["time to reach"]
-        print "Time remaining: %s" % out["time remaining"]
-        print "            at: %s" % out["time remaining at"]
         overtime = out.get("overtime",None)
         if overtime is not None:
            print "Overtime      : %s" % overtime
-        ticket_time = out["ticket time"]
+        else:
+           print "Time to reach : %s" % out["time to reach"]
+           print "Time remaining: %s" % out["time remaining"]
+           print "            at: %s" % out["time remaining at"]        
+        ticket_time = out["ticket remaining"]        
         if ticket_time == "reached":
-            print "Ticket time   : %s" % out["ticket time"]
+            pass
         else:
             print "Ticket remain : %s" % out["ticket remaining"]
             print "           at : %s" % out["ticket remaining at"]
