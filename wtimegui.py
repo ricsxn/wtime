@@ -6,20 +6,11 @@ import sys
 from Tkinter import *
 from wtime3 import wtime
 
-T1Content = '09:28:00'
-T2Content = '11:53:19'
-T2T1Content = '02:25:19'
-T3Content = '11:53:19'
-T4Content = '11:53:19'
-T4T3Content = '00:00:00'
-PauseTimeContent = '00:30:00'
-TotalTimeContent = '01:55:19'
-TimeToReachContent = '07:12:00'
-TimeRemainingContent = '05:16:41'
-TimeRemainingAtContent = '17:10:00'
-TicketRemainContent = '04:04:41'
-TicketRemainAtContent = '15:58:00'
-TicketTimeContent = '06:30:00'
+__author__ = "Riccardo Bruno"
+__copyright__ = "2017"
+__license__ = "Apache"
+__maintainer__ = "Riccardo Bruno"
+__email__ = "riccardo.bruno@gmail.com"
 
 winTITLE="wtime GUI"
 lblFONT=("Lucida Grande", 12)

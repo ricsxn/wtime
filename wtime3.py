@@ -5,6 +5,12 @@
 import sys
 import datetime as dt
 
+__author__ = "Riccardo Bruno"
+__copyright__ = "2017"
+__license__ = "Apache"
+__maintainer__ = "Riccardo Bruno"
+__email__ = "riccardo.bruno@gmail.com"
+
 # Default values in (H,M,S) format
 def_worktime = (7, 12, 0)
 def_ticket_due = (6, 30, 0)

@@ -5,6 +5,11 @@
 import sys
 import datetime as dt
 
+__author__ = "Riccardo Bruno"
+__copyright__ = "2017"
+__license__ = "Apache"
+__maintainer__ = "Riccardo Bruno"
+__email__ = "riccardo.bruno@gmail.com"
 
 class wtime:
 	start_time=dt.datetime.now()
