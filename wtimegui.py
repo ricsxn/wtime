@@ -65,7 +65,7 @@ def gui_update(out):
     TimeRemainingContent.set(out["time remaining"])
     TimeRemainingAtContent.set(out["time remaining at"])
     TicketRemainContent.set(out["ticket remaining"])
-    TicketRemainAtContent.set(out["time remaining at"])
+    TicketRemainAtContent.set(out["ticket remaining at"])
     TicketTimeContent.set(out["ticket time"])
 
 if __name__ == "__main__":
@@ -117,7 +117,7 @@ if __name__ == "__main__":
 		"row": 7,
 		"column": 0},
 	   {"label": "at :",
-		"label content": TimeRemainingContent,
+		"label content": TimeRemainingAtContent,
 		"row": 8,
 		"column": 0},
 	   {"label": "Ticket remain :",

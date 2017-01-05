@@ -310,6 +310,9 @@ class wtime:
         return out
 
     def printout(self,out):
+        print "---------------------------------------"
+        print " wtime                                 "
+        print "---------------------------------------"
         print "T1            : %s" % out["t1"]
         print "T2            : %s T2-T1: %s" % (out["t2"],out["t2t1"])
         print "T3            : %s" % out["t3"]
@@ -333,6 +336,7 @@ class wtime:
         else:
             print "Ticket remain : %s" % out["ticket remaining"]
             print "           at : %s" % out["ticket remaining at"]
+        print "Ticket time   : %s" % out["ticket time"]
 
 
 if __name__ == "__main__":
