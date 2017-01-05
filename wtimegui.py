@@ -87,17 +87,18 @@ def checkTime():
     flag_thread_running = True
     t = currentThread()
     while flag_thread_running:
-        if out.get("time remaining perc",0) == 100 and flag_time_reached == False:
+        if out.get("time remaining","reached") == "reached" and flag_time_reached == False:
             print "You've DONE!!!"
             tkMessageBox.showinfo("wtimegui", "You've DONE!!!",parent=root) 
             flag_time_reached = True           
             flag_thread_running = False
-        elif out.get("ticket remaining perc",0) == 100 and flag_ticket_reached == False:
+            return
+        elif out["ticket remaining"] == "reached" and flag_ticket_reached == False:
             print "Ticket reached!!!"
             tkMessageBox.showinfo("wtimegui", "Ticket reached!!!",parent=root)
             flag_ticket_reached = True
+        btnRecalc()
         time.sleep(5)
-        btnRecalc()        
 
 if __name__ == "__main__":
     t1,t2,t3,t4 = wtime.getTimes("wtime3")
