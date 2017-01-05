@@ -1,5 +1,5 @@
 # wtime
-working time watcher
+Working time watcher
 
 This python code allows to monitor working time providing real time statistics such as:
 
@@ -31,9 +31,13 @@ Execution
 Working parameters such as: working time, pause time, ticket time, etc must be configured modifying the code or wtime class variable members.
 
 # wtime2
-working time watcher, to be used in case working time has been splitted in two intervals (morning+afternoon)
+Working time watcher, to be used in case working time has been splitted in two intervals (morning+afternoon)
 
 ./wtime2.py t1 [[[t2] t3] t4]
 
 Where tx is a timestamp in the form of HH:MM:SS
+
+# wtime3
+This version works exactly like wtime2 integrating the new calculation using the wtime object. This version is used by the wtimegui wich provides a tkinter based GUI.
+
 
