@@ -5,10 +5,10 @@
 import sys
 import time
 from Tkinter import *
-import tkMessageBox
-from threading import Thread
+from threading import *
 from wtime3 import wtime
 import ttk
+import tkMessageBox
 
 
 __author__ = "Riccardo Bruno"
@@ -16,6 +16,10 @@ __copyright__ = "2017"
 __license__ = "Apache"
 __maintainer__ = "Riccardo Bruno"
 __email__ = "riccardo.bruno@gmail.com"
+
+flag_ticket_reached = False
+flag_time_reached = False
+flag_thread_running = False
 
 winTITLE="wtime GUI"
 lblFONT=("Lucida Grande", 12)
@@ -46,13 +50,16 @@ pbarTime = ttk.Progressbar(root, orient=HORIZONTAL, length=64, mode='determinate
 pbarTicket = ttk.Progressbar(root, orient=HORIZONTAL, length=64, mode='determinate')
 
 def btnExit(*args):
+    flag_thread_running = False
     sys.exit(0)
 
 def btnRecalc(*args):
+    global flag_thread_running
     wt = wtime(t1=t1,t2=t2,t3=t3,t4=t4)
     out = wt.calc2()
     wt.printout(out)
-    gui_update(out)
+    if flag_thread_running:
+        gui_update(out)
 
 def gui_update(out):
     T1Content.set(out["t1"])
@@ -73,11 +80,22 @@ def gui_update(out):
     pbarTicket["value"] = out["ticket remaining perc"]
     
 def checkTime():
-    while True:
-        if out.get("time remaining perc",0) == 100:
+    global flag_ticket_reached
+    global flag_time_reached
+    global flag_thread_running
+    time.sleep(1)
+    flag_thread_running = True
+    t = currentThread()
+    while flag_thread_running:
+        if out.get("time remaining perc",0) == 100 and flag_time_reached == False:
             print "You've DONE!!!"
-            tkMessageBox.showinfo("wtimegui", "You've DONE!!!",parent=root)
-            return
+            tkMessageBox.showinfo("wtimegui", "You've DONE!!!",parent=root) 
+            flag_time_reached = True           
+            flag_thread_running = False
+        elif out.get("ticket remaining perc",0) == 100 and flag_ticket_reached == False:
+            print "Ticket reached!!!"
+            tkMessageBox.showinfo("wtimegui", "Ticket reached!!!",parent=root)
+            flag_ticket_reached = True
         time.sleep(5)
         btnRecalc()        
 
