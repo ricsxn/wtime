@@ -40,4 +40,13 @@ Where tx is a timestamp in the form of HH:MM:SS
 # wtime3
 This version works exactly like wtime2 integrating the new calculation using the wtime object. This version is used by the wtimegui wich provides a tkinter based GUI.
 
+# wtimegui.py
+
+Execution
+
+./wtimegui.py <start_timestamp> [<begin_pause_timestamp> <resume_pause_timestamp> <end_timestamp>]
+
+On MacOS X it may necessary to execute the following command:
+
+defaults write org.python.python ApplePersistenceIgnoreState NO
 

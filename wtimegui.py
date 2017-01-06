@@ -20,6 +20,8 @@ __email__ = "riccardo.bruno@gmail.com"
 flag_ticket_reached = False
 flag_time_reached = False
 flag_thread_running = False
+interval_thread_waitcycles = 5
+t=None
 
 winTITLE="wtime GUI"
 lblFONT=("Lucida Grande", 12)
@@ -50,16 +52,16 @@ pbarTime = ttk.Progressbar(root, orient=HORIZONTAL, length=64, mode='determinate
 pbarTicket = ttk.Progressbar(root, orient=HORIZONTAL, length=64, mode='determinate')
 
 def btnExit(*args):
+    global flag_thread_running
     flag_thread_running = False
+    root.destroy()
     sys.exit(0)
 
 def btnRecalc(*args):
-    global flag_thread_running
     wt = wtime(t1=t1,t2=t2,t3=t3,t4=t4)
     out = wt.calc2()
     wt.printout(out)
-    if flag_thread_running:
-        gui_update(out)
+    gui_update(out)
 
 def gui_update(out):
     T1Content.set(out["t1"])
@@ -83,13 +85,14 @@ def checkTime():
     global flag_ticket_reached
     global flag_time_reached
     global flag_thread_running
+    global interval_thread_waitcycles
     time.sleep(1)
     flag_thread_running = True
     t = currentThread()
     while flag_thread_running:
         if out.get("time remaining","reached") == "reached" and flag_time_reached == False:
             print "You've DONE!!!"
-            tkMessageBox.showinfo("wtimegui", "You've DONE!!!",parent=root) 
+            tkMessageBox.showinfo("wtimegui", "You've DONE!!!",parent=root)
             flag_time_reached = True           
             flag_thread_running = False
             return
@@ -98,7 +101,12 @@ def checkTime():
             tkMessageBox.showinfo("wtimegui", "Ticket reached!!!",parent=root)
             flag_ticket_reached = True
         btnRecalc()
-        time.sleep(5)
+        for i in range(1,interval_thread_waitcycles):
+            if flag_thread_running:
+			    time.sleep(1)
+            else:
+                break
+
 
 if __name__ == "__main__":
     t1,t2,t3,t4 = wtime.getTimes("wtime3")
