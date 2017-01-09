@@ -280,13 +280,16 @@ class wtime:
         out["t2t1"] = self.printTimeDelta(dtm)
         out["t4t3"] = self.printTimeDelta(dta)
         
+        total_time=dt.timedelta(seconds=0)
         if did > dt.timedelta(seconds=0):
             out["pause time"] = "%s" % self.printTimeDelta(did)
             out["total time"] = "%s" % self.printTimeDelta(dtm+dta)
+            total_time = dtm+dta
         else:
             out["pause time"] = "%s" % self.printTimeDelta(dtp)
             if dtm+dta >= dtp:
                 out["total time"] = "%s" % self.printTimeDelta(dtm+dta-dtp)
+                total_time = dtp
             else:
                 out["consume pause"] = "%s" % self.printTimeDelta(dtp-(dtm+dta))
         if did > dt.timedelta(seconds=0):
@@ -294,11 +297,10 @@ class wtime:
                 out["time to reach"] = "%s" % self.printTimeDelta(dtw)
                 out["time remaining"] = "%s" % self.printTimeDelta(dtw-(dtm+dta))
                 out["time remaining at"] = "%s" % self.printTimeDelta(dt1+(dt3-dt2)+dtw)
-                tmr = dtw-(dtm+dta)
-                tma = dt1+(dt3-dt2)+dtw
-                tmrsec = tmr.seconds + tmr.days * 24 * 3600
-                tmasec = tma.seconds + tma.days * 24 * 3600
-                out["time remaining perc"] = 100*(tmasec-tmrsec)/tmasec
+                time_to_reach = dtw
+                total_time_sec = total_time.seconds + total_time.days * 24 * 3600
+                time_to_reach_sec = time_to_reach.seconds + time_to_reach.days * 24 * 3600
+                out["time remaining perc"] = 100*total_time_sec/time_to_reach_sec
             else:
                 out["overtime"] = "%s" % self.printTimeDelta((dtm+dta)-dtw)
                 out["time remaining perc"] = 100
@@ -307,11 +309,10 @@ class wtime:
                 out["time to reach"] = "%s" % self.printTimeDelta(dtw)
                 out["time remaining"] = "%s" % self.printTimeDelta((dtw+dtp)-(dtm+dta))
                 out["time remaining at"] = "%s" % self.printTimeDelta(dt1+(dt3-dt2)+(dtw+dtp))
-                tmr = (dtw+dtp)-(dtm+dta)
-                tma = dt1+(dt3-dt2)+(dtw+dtp)
-                tmrsec = tmr.seconds + tmr.days * 24 * 3600
-                tmasec = tma.seconds + tma.days * 24 * 3600
-                out["time remaining perc"] = 100*(tmasec-tmrsec)/tmasec
+                time_to_reach = dtw
+                total_time_sec = total_time.seconds + total_time.days * 24 * 3600
+                time_to_reach_sec = time_to_reach.seconds + time_to_reach.days * 24 * 3600
+                out["time remaining perc"] = 100*total_time_sec/time_to_reach_sec
             else: 
                 out["overtime"] = "%s" % self.printTimeDelta((dtm+dta)-(dtw+dtp))
                 out["time to reach"] = "reached"
@@ -322,11 +323,10 @@ class wtime:
         else:
             out["ticket remaining"] = "%s" % self.printTimeDelta(dtk-(dtm+dta))
             out["ticket remaining at"] = "%s" % self.printTimeDelta(dtn+dtk-(dtm+dta))
-            tkr = dtk-(dtm+dta)
-            tka = dtn+dtk-(dtm+dta)
-            tmrsec = tkr.seconds + tkr.days * 24 * 3600
-            tmasec = tka.seconds + tka.days * 24 * 3600
-            out["ticket remaining perc"] = 100*(tmasec-tmrsec)/tmasec
+            tkg = dtk-(dtk-(dtm+dta))
+            tkgsec = tkg.seconds + tkg.days * 24 * 3600
+            dtksec = dtk.seconds + dtk.days * 24 * 3600
+            out["ticket remaining perc"] = 100*tkgsec/dtksec
         out["ticket time"] = "%s" % self.printTimeDelta(dtk)
         return out
 
