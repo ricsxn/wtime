@@ -44,6 +44,39 @@ TimeRemainingAtContent = StringVar()
 TicketRemainContent = StringVar()
 TicketRemainAtContent = StringVar()
 TicketTimeContent = StringVar()
+TimePercentage = StringVar()
+TicketPercentage = StringVar()
+
+T1Text = StringVar()
+T2Text = StringVar()
+T2T1Text = StringVar()
+T3Text = StringVar()
+T4Text = StringVar()
+T4T3Text = StringVar()
+PauseTimeText = StringVar()
+TotalTimeText = StringVar()
+TimeToReachText = StringVar()
+TimeRemainingText = StringVar()
+TimeRemainingAtText = StringVar()
+TicketRemainText = StringVar()
+TicketRemainAtText = StringVar()
+TicketTimeText = StringVar()
+
+T1Text = "T1 :"
+T2Text = "T2 :"
+T2T1Text = "T2 - T1 :"
+T3Text = "T3 :"
+T4Text = "T4 :"
+T4T3Text = "T4 - T3 :"
+PauseTimeText = "Pause Time :"
+TotalTimeText = "Total Time :"
+TimeToReachText = "Time to reach :"
+TimeRemainingText = "Time remain :"
+TimeRemainingAtText = "at :"
+TicketRemainText = "Ticket remain :"
+TicketRemainAtText = "at :"
+TicketTimeText = "Ticket time :"
+
 
 #style = ttk.Style()
 #style.configure('wt.Horizontal.TProgressbar', fieldbackground='maroon')
@@ -80,8 +113,12 @@ def gui_update(out):
     TicketTimeContent.set(out["ticket time"])
     pbarTime["value"] = out["time remaining perc"]
     pbarTicket["value"] = out["ticket remaining perc"]
+    TimePercentage.set("%2d %%" % out["time remaining perc"])
+    TicketPercentage.set("%2d %%" % out["ticket remaining perc"])
     
 def checkTime():
+    global lblTimePerc
+    global lblTicketPerc
     global flag_ticket_reached
     global flag_time_reached
     global flag_thread_running
@@ -116,71 +153,81 @@ if __name__ == "__main__":
     
     gui_update(out)        
     GUI = ( 
-       {"label": "T1 :", 
+       {"label": T1Text,
         "label content": T1Content,
         "row": 0,
         "column": 0},
-       {"label": "T2 :",
+       {"label": T2Text,
         "label content": T2Content,
         "row": 1,
         "column": 0},
-       {"label": "T2-T1 :",
+       {"label": T2T1Text,
         "label content": T2T1Content,
         "row": 1,
         "column": 2},
-       {"label": "T3 :",
+       {"label": T3Text,
         "label content": T3Content,
         "row": 2,
         "column": 0},
-       {"label": "T4 :",
+       {"label": T4Text,
         "label content": T4Content,
         "row": 3,
         "column": 0},
-       {"label": "T4-T3 :",
+       {"label": T4T3Text,
         "label content": T4T3Content,
         "row": 3,
         "column": 2},
-       {"label": "Pause Time :",
+       {"label": PauseTimeText,
         "label content": PauseTimeContent,
         "row": 4,
         "column": 0},
-       {"label": "Total Time :",
+       {"label": TotalTimeText,
         "label content": TotalTimeContent,
         "row": 5,
         "column": 0},
-       {"label": "Time to reach :",
+       {"label": TimeToReachText,
         "label content": TimeToReachContent,
         "row": 6,
         "column": 0},
-       {"label": "Time remaining :",
+       {"label": TimeRemainingText,
         "label content": TimeRemainingContent,
         "row": 7,
         "column": 0},
-       {"label": "at :",
+       {"label": TimeRemainingAtText,
         "label content": TimeRemainingAtContent,
         "row": 8,
         "column": 0},
-       {"label": "Ticket remain :",
+       {"label": TicketRemainText,
         "label content": TicketRemainContent,
         "row": 9,
         "column": 0},
-       {"label": " at :",
+       {"label": TicketRemainAtText,
         "label content": TicketRemainAtContent,
         "row": 10,
         "column": 0},
-       {"label": "Ticket time :",
+       {"label": TicketTimeContent,
         "label content": TicketTimeContent,
         "row":11,
         "column": 0},
+       {"label": TimePercentage,
+        "label content": None,
+        "row": 7,
+        "column": 2},
+       {"label": TicketPercentage,
+        "label content": None,
+        "row": 9,
+        "column": 2},
     )
     
     for gui_element in GUI:
-        Label(root, text=gui_element["label"], font=lblFONT, fg=lblFGCOLOR).grid(row=gui_element["row"], column=gui_element["column"])
-        Label(root, textvariable = gui_element["label content"], text=gui_element["label content"], font=lblFONT, fg=lblFGCOLOR).grid(row=gui_element["row"], column=gui_element["column"]+1)
+        Label(root, textvariable=gui_element["label"], text=gui_element["label"], font=lblFONT, fg=lblFGCOLOR).grid(row=gui_element["row"], column=gui_element["column"])
+        if gui_element["label content"] is not None:
+            Label(root, textvariable = gui_element["label content"], text=gui_element["label content"], font=lblFONT, fg=lblFGCOLOR).grid(row=gui_element["row"], column=gui_element["column"]+1)    
+    pbarTime.grid(row=7,column=3)
+    pbarTicket.grid(row=9,column=3)
     Button(root, text="Exit", command=btnExit).grid(row=12,column=3)
     Button(root, text="Recalc", command=btnRecalc).grid(row=12,column=1)
-    pbarTime.grid(row=8,column=3)
-    pbarTicket.grid(row=10,column=3)
+
     root.bind('<Return>',btnRecalc)
     root.bind('<space>',btnRecalc)
     root.bind('<Escape>',btnExit)
@@ -188,6 +235,7 @@ if __name__ == "__main__":
     t = Thread(target=checkTime, args=())
     t.start()
     root.lift ()
+    root.protocol("WM_DELETE_WINDOW", btnExit)
     root.call('wm', 'attributes', '.', '-topmost', True)
     root.after_idle(root.call, 'wm', 'attributes', '.', '-topmost', False)
     root.mainloop()
