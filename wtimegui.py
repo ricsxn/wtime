@@ -21,7 +21,8 @@ flag_ticket_reached = False
 flag_time_reached = False
 flag_thread_running = False
 interval_thread_waitcycles = 5
-t=None
+check_time_thread=None
+wtime_out = None
 
 winTITLE="wtime GUI"
 lblFONT=("Lucida Grande", 12)
@@ -91,10 +92,11 @@ def btnExit(*args):
     sys.exit(0)
 
 def btnRecalc(*args):
+    global wtime_out
     wt = wtime(t1=t1,t2=t2,t3=t3,t4=t4)
-    out = wt.calc2()
-    wt.printout(out)
-    gui_update(out)
+    wtime_out = wt.calc2()
+    wt.printout(wtime_out)
+    gui_update(wtime_out)
 
 def gui_update(out):
     T1Content.set(out["t1"])
@@ -116,9 +118,8 @@ def gui_update(out):
     TimePercentage.set("%2d %%" % out["time remaining perc"])
     TicketPercentage.set("%2d %%" % out["ticket remaining perc"])
     
-def checkTime():
-    global lblTimePerc
-    global lblTicketPerc
+def check_time():
+    global wtime_out
     global flag_ticket_reached
     global flag_time_reached
     global flag_thread_running
@@ -127,13 +128,13 @@ def checkTime():
     flag_thread_running = True
     t = currentThread()
     while flag_thread_running:
-        if out.get("time remaining perc",100) == 100 and flag_time_reached == False:
+        if wtime_out.get("overtime",None) is not None and flag_time_reached == False:            
             print "You've DONE!!!"
             tkMessageBox.showinfo("wtimegui", "You've DONE!!!",parent=root)
             flag_time_reached = True           
             flag_thread_running = False
             continue
-        elif out.get("ticket remaining perc",100) == 100 and flag_ticket_reached == False:
+        elif wtime_out["ticket remaining"] == "reached" and flag_ticket_reached == False:
             print "Ticket reached!!!"
             tkMessageBox.showinfo("wtimegui", "Ticket reached!!!",parent=root)
             flag_ticket_reached = True
@@ -148,10 +149,10 @@ def checkTime():
 if __name__ == "__main__":
     t1,t2,t3,t4 = wtime.getTimes("wtime3")
     wt = wtime(t1=t1,t2=t2,t3=t3,t4=t4)
-    out = wt.calc2()
-    wt.printout(out)
+    wtime_out = wt.calc2()
+    wt.printout(wtime_out)
     
-    gui_update(out)        
+    gui_update(wtime_out)        
     GUI = ( 
        {"label": T1Text,
         "label content": T1Content,
@@ -232,8 +233,8 @@ if __name__ == "__main__":
     root.bind('<space>',btnRecalc)
     root.bind('<Escape>',btnExit)
     
-    t = Thread(target=checkTime, args=())
-    t.start()
+    check_time_thread = Thread(target=check_time, args=())
+    check_time_thread.start()
     root.lift ()
     root.protocol("WM_DELETE_WINDOW", btnExit)
     root.call('wm', 'attributes', '.', '-topmost', True)
