@@ -119,6 +119,7 @@ def gui_update(out):
     TicketPercentage.set("%2d %%" % out["ticket remaining perc"])
     
 def check_time():
+    global root
     global wtime_out
     global flag_ticket_reached
     global flag_time_reached
@@ -128,16 +129,20 @@ def check_time():
     flag_thread_running = True
     t = currentThread()
     while flag_thread_running:
-        if wtime_out.get("overtime",None) is not None and flag_time_reached == False:            
+        if wtime_out.get("overtime",None) is not None and flag_time_reached == False:
+            root.attributes("-topmost", True)
             print "You've DONE!!!"
             tkMessageBox.showinfo("wtimegui", "You've DONE!!!",parent=root)
             flag_time_reached = True           
-            flag_thread_running = False
+            flag_thread_running = False            
+            root.attributes("-topmost", False)
             continue
         elif wtime_out["ticket remaining"] == "reached" and flag_ticket_reached == False:
+            root.attributes("-topmost", True)
             print "Ticket reached!!!"
             tkMessageBox.showinfo("wtimegui", "Ticket reached!!!",parent=root)
             flag_ticket_reached = True
+            root.attributes("-topmost", False)
         btnRecalc()
         for i in range(1,interval_thread_waitcycles):
             if flag_thread_running:
