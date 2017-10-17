@@ -3,4 +3,4 @@ python:
   - '2.7'
 matrix:
   include:
-script: ./test.py
+script: python ./test.py
