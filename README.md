@@ -1,3 +1,5 @@
+![testing status][travis]
+
 # wtime
 Working time watcher
 
@@ -50,3 +52,5 @@ On MacOS X it may necessary to execute the following command:
 
 defaults write org.python.python ApplePersistenceIgnoreState NO
 
+
+[travis]: https://travis-ci.org/ricsxn/wtime.svg?branch=master
