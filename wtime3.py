@@ -220,10 +220,11 @@ class wtime:
 
 
     def calc2(self):
+        out = {} 
         now=dt.datetime.now()
         if self.t1 is None:
-            print "You must specify at least one time stamp in HH:MM:SS format"
-            sys.exit(1)
+            out["error"]="You must specify at least one time stamp in HH:MM:SS format"
+            return out
         t1h = self.t1.hour
         t1m = self.t1.minute
         t1s = self.t1.second
@@ -272,7 +273,6 @@ class wtime:
         dta=dt4-dt3 # delta time afternoon
         did=dt3-dt2 # delta idle time
         
-        out = {}
         out["t1"] = "%02d:%02d:%02d" % (t1h,t1m,t1s)
         out["t2"] = "%02d:%02d:%02d" % (t2h,t2m,t2s)
         out["t3"] = "%02d:%02d:%02d" % (t3h,t3m,t3s)
@@ -333,6 +333,9 @@ class wtime:
         return out
 
     def printout(self,out):
+        if 'error' in out.keys():
+            print out['error']
+            return 1
         print "---------------------------------------"
         print " wtime                                 "
         print "---------------------------------------"
@@ -360,14 +363,15 @@ class wtime:
             print "Ticket remain : %s" % out["ticket remaining"]
             print "           at : %s" % out["ticket remaining at"]
         print "Ticket time   : %s" % out["ticket time"]
+        return 0
 
 
 if __name__ == "__main__":
     t1,t2,t3,t4 = wtime.getTimes("wtime3")
     wt = wtime(t1=t1,t2=t2,t3=t3,t4=t4)
     out = wt.calc2()
-    wt.printout(out)
-    sys.exit(0)
+    exit_code = wt.printout(out)
+    sys.exit(exit_code)
     
     
 
