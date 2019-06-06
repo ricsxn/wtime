@@ -197,8 +197,8 @@ class wtime:
     def getTimes(wtimecmd):
         t1 = t2 = t3 = t4 = None
         if len(sys.argv) < 1:
-            print "Usage %s t1 [[[t2] t3] t4]" % wtimecmd
-            print "Where tx in the form HH:MM[:SS]"
+            print("Usage %s t1 [[[t2] t3] t4]" % wtimecmd)
+            print("Where tx in the form HH:MM[:SS]")
             sys.exit(1)
         # wtime params
         t1 = t2 = t3 = t4 = None
@@ -229,7 +229,7 @@ class wtime:
         t1m = self.t1.minute
         t1s = self.t1.second
         if t1h is None or t1m is None:
-            print "t1 does not seem a valid time value, please specify a valid timestamp in HH:MM:SS format"
+            print("t1 does not seem a valid time value, please specify a valid timestamp in HH:MM:SS format")
             sys.exit(1)
         dt1=dt.timedelta(0,t1h*3600+t1m*60+t1s)
         if self.t2 is not None:
@@ -334,35 +334,35 @@ class wtime:
 
     def printout(self,out):
         if 'error' in out.keys():
-            print out['error']
+            print(out['error'])
             return 1
-        print "---------------------------------------"
-        print " wtime                                 "
-        print "---------------------------------------"
-        print "T1            : %s" % out["t1"]
-        print "T2            : %s T2-T1: %s" % (out["t2"],out["t2t1"])
-        print "T3            : %s" % out["t3"]
-        print "T4            : %s T4-T3: %s" % (out["t4"],out["t4t3"])
-        print "Pause time    : %s" % out["pause time"]
+        print("---------------------------------------")
+        print(" wtime                                 ")
+        print("---------------------------------------")
+        print("T1            : %s" % out["t1"])
+        print("T2            : %s T2-T1: %s" % (out["t2"],out["t2t1"]))
+        print("T3            : %s" % out["t3"])
+        print("T4            : %s T4-T3: %s" % (out["t4"],out["t4t3"]))
+        print("Pause time    : %s" % out["pause time"])
         consuming = out.get("consume pause", None)
         if consuming is None:
-            print "Total time    : %s" % out["total time"]
+            print("Total time    : %s" % out["total time"])
         else:
-            print "Consume pause : %s to go" % consuming
+            print("Consume pause : %s to go" % consuming)
         overtime = out.get("overtime",None)
         if overtime is not None:
-           print "Overtime      : %s" % overtime
+           print("Overtime      : %s" % overtime)
         else:
-           print "Time to reach : %s" % out["time to reach"]
-           print "Time remaining: %s" % out["time remaining"]
-           print "            at: %s" % out["time remaining at"]        
+           print("Time to reach : %s" % out["time to reach"])
+           print("Time remaining: %s" % out["time remaining"])
+           print("            at: %s" % out["time remaining at"])       
         ticket_time = out["ticket remaining"]        
         if ticket_time == "reached":
             pass
         else:
-            print "Ticket remain : %s" % out["ticket remaining"]
-            print "           at : %s" % out["ticket remaining at"]
-        print "Ticket time   : %s" % out["ticket time"]
+            print("Ticket remain : %s" % out["ticket remaining"])
+            print("           at : %s" % out["ticket remaining at"])
+        print("Ticket time   : %s" % out["ticket time"])
         return 0
 
 

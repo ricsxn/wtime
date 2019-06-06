@@ -4,11 +4,18 @@
 #
 import sys
 import time
-from Tkinter import *
-from threading import *
+try:
+    from Tkinter import *
+    import ttk
+    import tkMessageBox
+    from threading import *
+except ModuleNotFoundError:
+    from tkinter import *
+    from tkinter import ttk
+    from threading import *
+    from tkinter import messagebox as tkMessageBox
+    
 from wtime3 import wtime
-import ttk
-import tkMessageBox
 
 
 __author__ = "Riccardo Bruno"
@@ -127,11 +134,14 @@ def check_time():
     global interval_thread_waitcycles
     time.sleep(1)
     flag_thread_running = True
-    t = currentThread()
+    try:
+        t = currentThread()
+    except NameError:
+        t = current_thread()
     while flag_thread_running:
         if wtime_out.get("overtime",None) is not None and flag_time_reached == False:
             root.attributes("-topmost", True)
-            print "You've DONE!!!"
+            print("You've DONE!!!")
             tkMessageBox.showinfo("wtimegui", "You've DONE!!!",parent=root)
             flag_time_reached = True           
             flag_thread_running = False            
@@ -139,14 +149,14 @@ def check_time():
             continue
         elif wtime_out["ticket remaining"] == "reached" and flag_ticket_reached == False:
             root.attributes("-topmost", True)
-            print "Ticket reached!!!"
+            print("Ticket reached!!!")
             tkMessageBox.showinfo("wtimegui", "Ticket reached!!!",parent=root)
             flag_ticket_reached = True
             root.attributes("-topmost", False)
         btnRecalc()
         for i in range(1,interval_thread_waitcycles):
             if flag_thread_running:
-			    time.sleep(1)
+                time.sleep(1)
             else:
                 break
 
