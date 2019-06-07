@@ -8,15 +8,11 @@ try:
     from Tkinter import *
     import ttk
     import tkMessageBox
-    from threading import *
 except ModuleNotFoundError:
     from tkinter import *
     from tkinter import ttk
-    from threading import *
     from tkinter import messagebox as tkMessageBox
-    
 from wtime3 import wtime
-
 
 __author__ = "Riccardo Bruno"
 __copyright__ = "2017"
@@ -91,28 +87,45 @@ class wtimeGUI:
 
 
     def __init__(self):
-        t1,t2,t3,t4 = wtime.getTimes("wtime3")
-        self.wt = wtime(t1=t1,t2=t2,t3=t3,t4=t4)
-        self.wtime_out = self.wt.calc2()
-        self.wt.printout(self.wtime_out)
+
+        self.t1,self.t2,self.t3,self.t4 = wtime.getTimes("wtime3")
+        self.wt = wtime(t1=self.t1,t2=self.t2,t3=self.t3,t4=self.t4)
+        wtime_out = self.wt.calc2()
+        self.wt.printout(wtime_out)
 
         #style = ttk.Style()
         #style.configure('wt.Horizontal.TProgressbar', fieldbackground='maroon')
         #style.map("Horizontal.TProgressbar",fieldbackground=[("active", "black"), ("disabled", "red")])
         self.pbarTime = ttk.Progressbar(self.root, orient=HORIZONTAL, length=64, mode='determinate')
         self.pbarTicket = ttk.Progressbar(self.root, orient=HORIZONTAL, length=64, mode='determinate')
-        self.gui_update(self.wtime_out)
         self.gui_build()
         self.root.bind('<Return>',self.btnRecalc)
         self.root.bind('<space>',self.btnRecalc)
         self.root.bind('<Escape>',self.btnExit)
-        self.check_time_thread = Thread(target=self.check_time, args=(self,))
-        self.check_time_thread.start()
         self.root.lift ()
         self.root.protocol("WM_DELETE_WINDOW", self.btnExit)
         self.root.call('wm', 'attributes', '.', '-topmost', True)
         self.root.after_idle(self.root.call, 'wm', 'attributes', '.', '-topmost', False)
-        self.root.mainloop()
+        self.gui_update(wtime_out)
+        self.root.after(1000, self.time_check)
+        self.counter=0
+
+    def time_check(self):
+        if self.wt is not None and self.counter % self.interval_thread_waitcycles == 0:
+            wtime_out = self.wt.calc2()
+            self.gui_update(wtime_out)
+            #self.wt.printout(wtime_out)
+            if wtime_out.get("overtime", None) is not None and self.flag_time_reached == False:
+                print("You've DONE!!!")
+                self.flag_time_reached = True
+                flag_thread_running = False
+                gui.show_message_box("You've DONE!!!")
+            elif wtime_out["ticket remaining"] == "reached" and flag_ticket_reached == False:
+                print("Ticket reached!!!")
+                flag_ticket_reached = True
+                gui.show_message_box("Ticket reached!!!")
+        self.counter+=1
+        self.root.after(1000, self.time_check)
 
     def btnExit(self, *args):
         global flag_thread_running
@@ -121,11 +134,9 @@ class wtimeGUI:
         sys.exit(0)
 
     def btnRecalc(self, *args):
-        global wtime_out
-        wt = wtime(t1=t1,t2=t2,t3=t3,t4=t4)
-        wtime_out = wt.calc2()
-        wt.printout(wtime_out)
-        gui_update(wtime_out)
+        wtime_out = self.wt.calc2()
+        self.wt.printout(wtime_out)
+        self.gui_update(wtime_out)
 
     def gui_update(self, out):
         self.T1Content.set(out["t1"])
@@ -237,35 +248,20 @@ class wtimeGUI:
         tkMessageBox.showinfo("wtimegui", message,parent=self.root)
         self.root.attributes("-topmost", False)
 
-    def check_time(self, *args):
-        gui = args[0]
-        if gui is None:
-            print("ERROR: No GUI passed")
-        time.sleep(1)
-        try:
-            t = currentThread()
-        except NameError:
-            t = current_thread()
-        flag_thread_running = True
-        while flag_thread_running:
-            if self.wtime_out.get("overtime",None) is not None and self.flag_time_reached == False:
-                print("You've DONE!!!")
-                self.flag_time_reached = True
-                flag_thread_running = False
-                gui.show_message_box("You've DONE!!!")
-                continue
-            elif self.wtime_out["ticket remaining"] == "reached" and flag_ticket_reached == False:
-                print("Ticket reached!!!")
-                flag_ticket_reached = True
-                gui.show_message_box("Ticket reached!!!")
-            btnRecalc()
-            for i in range(1,self.interval_thread_waitcycles):
-                if flag_thread_running:
-                    time.sleep(1)
-                else:
-                    break
+def check_time(*args):
+    gui=args[0]
+    if gui is None:
+        print("ERROR: No GUI object received")
+        return
+    t = current_thread()
+    while gui.flag_thread_running:
+        for i in range(1, gui.interval_thread_waitcycles):
+            time.sleep(1)
+        q.put(1)
 
 if __name__ == "__main__":
     gui = wtimeGUI()
+    gui.root.mainloop()
+
 
 
