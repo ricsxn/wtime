@@ -79,7 +79,7 @@ class wtime:
                 self.t3 = self.get_datetime(kwargs[arg])
             elif arg == 't4':
                 self.t4 = self.get_datetime(kwargs[arg])
-    
+
     def calc(self):
         self.current_time=dt.datetime.now()
         self.due_time=self.start_time+self.working_time+self.pause_time
@@ -169,7 +169,7 @@ class wtime:
                +"Ticket time   : %s\n" % self.getTicketTime() 
                +"Ticket at     : %s\n" % self.getTicketAt()     
                +"Ticket remain : %s "  % self.getTicketRemain()) + self.showbar(self.to_ticket,20,True)+"\n"
-               
+
     def getTsHMS(self,ts):
         h = m = s = None
         if ts is not None:
@@ -181,6 +181,7 @@ class wtime:
         except:
             pass
         if s is None: s = 0
+        if m is None: m = 0
         return h, m, s
 
     def printTimeDelta(self,delay):
@@ -192,7 +193,7 @@ class wtime:
             outAr = ["%02d" % (int(float(x))) for x in outAr[1:]]
             out   = ":".join(outAr)
         return out
-        
+
     @staticmethod
     def getTimes(wtimecmd):
         t1 = t2 = t3 = t4 = None
@@ -217,7 +218,6 @@ class wtime:
         now = dt.datetime.now()
         h, m, s = self.getTsHMS(timestring)
         return dt.datetime(now.year,now.month,now.day,h,m,s) 
-
 
     def calc2(self):
         out = {} 
@@ -272,14 +272,14 @@ class wtime:
         dtm=dt2-dt1 # delta time morning
         dta=dt4-dt3 # delta time afternoon
         did=dt3-dt2 # delta idle time
-        
+
         out["t1"] = "%02d:%02d:%02d" % (t1h,t1m,t1s)
         out["t2"] = "%02d:%02d:%02d" % (t2h,t2m,t2s)
         out["t3"] = "%02d:%02d:%02d" % (t3h,t3m,t3s)
         out["t4"] = "%02d:%02d:%02d" % (t4h,t4m,t4s)
         out["t2t1"] = self.printTimeDelta(dtm)
         out["t4t3"] = self.printTimeDelta(dta)
-        
+
         total_time=dt.timedelta(seconds=0)
         if did > dt.timedelta(seconds=0):
             out["pause time"] = "%s" % self.printTimeDelta(did)
@@ -355,8 +355,8 @@ class wtime:
         else:
            print("Time to reach : %s" % out["time to reach"])
            print("Time remaining: %s" % out["time remaining"])
-           print("            at: %s" % out["time remaining at"])       
-        ticket_time = out["ticket remaining"]        
+           print("            at: %s" % out["time remaining at"])
+        ticket_time = out["ticket remaining"]
         if ticket_time == "reached":
             pass
         else:
@@ -365,13 +365,11 @@ class wtime:
         print("Ticket time   : %s" % out["ticket time"])
         return 0
 
-
 if __name__ == "__main__":
-    t1,t2,t3,t4 = wtime.getTimes("wtime3")
-    wt = wtime(t1=t1,t2=t2,t3=t3,t4=t4)
+    t1, t2, t3, t4 = wtime.getTimes("wtime3")
+    wt = wtime(t1=t1, t2=t2, t3=t3, t4=t4)
     out = wt.calc2()
     exit_code = wt.printout(out)
     sys.exit(exit_code)
-    
-    
+
 
