@@ -118,11 +118,11 @@ class wtimeGUI:
             if wtime_out.get("overtime", None) is not None and self.flag_time_reached == False:
                 print("You've DONE!!!")
                 self.flag_time_reached = True
-                flag_thread_running = False
+                self.flag_thread_running = False
                 gui.show_message_box("You've DONE!!!")
-            elif wtime_out["ticket remaining"] == "reached" and flag_ticket_reached == False:
+            elif wtime_out["ticket remaining"] == "reached" and self.flag_ticket_reached == False:
                 print("Ticket reached!!!")
-                flag_ticket_reached = True
+                self.flag_ticket_reached = True
                 gui.show_message_box("Ticket reached!!!")
         self.counter+=1
         self.root.after(1000, self.time_check)
