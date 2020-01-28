@@ -91,10 +91,10 @@ class wtimeGUI:
         self.gui_update()
 
     def btnExit(self, *args):
+        self.btnUpdate()
         self.flag_thread_running = False
         #Wait for thread completion
         self.check_time_thread.join()
-        print(self.wt.report())
         self.root.destroy()
         sys.exit(0)
 
@@ -102,7 +102,6 @@ class wtimeGUI:
         self.check_time()
         self.wt.printout(self.wtime_out)
         #print(self.wtime_out)
-
 
     def show_message_box(self, message):
         self.root.attributes("-topmost", True)
