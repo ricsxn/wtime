@@ -95,27 +95,34 @@ class wtimeGUI:
         # Main loop
         self.root.mainloop()
 
+    def update_T_button(self):
+        button = self.get_item("button","Tx")["button_ctl"]
+        if self.t4 is not None:
+            button["text"] = "T-"
+            button["state"] = DISABLED
+        elif self.t3 is not None:
+            button["text"] = "T4"
+        elif self.t2 is not None:
+            button["text"] = "T3"
+        else:
+            pass
+
     def check_time(self):
         self.wtime_out = self.wt.calc2()
         self.gui_update()
 
     def btnTx(self, *args):
-        button = self.get_item("button","Tx")["button_ctl"]
         ts = wtime.get_ts()
         if self.t2 is None:
             self.t2 = ts
-            button["text"] = "T3"
         elif self.t3 is None:
             self.t3 = ts
-            button["text"] = "T4"
         elif self.t4 is None:
             self.t4 = ts
-            button["text"] = "T-"
-            button["state"] = DISABLED
         else:
-            print("No more timestamps to set")
             return
         self.wt = wtime(t1=self.t1, t2=self.t2, t3=self.t3, t4=self.t4, current_time=self.ct)
+        self.update_T_button()
         self.btnUpdate()
 
     def btnExit(self, *args):
@@ -181,6 +188,7 @@ class wtimeGUI:
             else:
               print("WARNING: Skipping unknown type: '%s' for item '%s'"
                     % (item["type"], item["title"]))
+        self.update_T_button()
 
     def gui_update(self):
         for item in self.GUI_data:
