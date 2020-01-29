@@ -60,9 +60,18 @@ class wtimeGUI:
         {"type": "text", "name": "ticket remaining perc", "title": "%", "row": 9, "col": 2},
         {"type": "progress", "name": "t1", "title": "Time progress", "row": 7, "col": 3},
         {"type": "progress", "name": "t1", "title": "Ticket progress", "row": 9, "col": 3},
-        {"type": "button", "name": "t1", "title": "Update", "row": 12, "col": 1},
-        {"type": "button", "name": "t1", "title": "Exit", "row": 12, "col": 3},
+        {"type": "button", "name": "Tx", "title": "T2", "row": 12, "col": 0},
+        {"type": "button", "name": "Update", "title": "Update", "row": 12, "col": 1},
+        {"type": "button", "name": "Exit", "title": "Exit", "row": 12, "col": 3},
     )
+
+    def get_item(self, type, name):
+        item_result = None
+        for item in self.GUI_data:
+            if item["type"] == type and item["name"] == name:
+                item_result = item
+                break
+        return item_result
 
     def __init__(self):
         # wtime4
@@ -90,6 +99,25 @@ class wtimeGUI:
         self.wtime_out = self.wt.calc2()
         self.gui_update()
 
+    def btnTx(self, *args):
+        button = self.get_item("button","Tx")["button_ctl"]
+        ts = wtime.get_ts()
+        if self.t2 is None:
+            self.t2 = ts
+            button["text"] = "T3"
+        elif self.t3 is None:
+            self.t3 = ts
+            button["text"] = "T4"
+        elif self.t4 is None:
+            self.t4 = ts
+            button["text"] = "T-"
+            button["state"] = DISABLED
+        else:
+            print("No more timestamps to set")
+            return
+        self.wt = wtime(t1=self.t1, t2=self.t2, t3=self.t3, t4=self.t4, current_time=self.ct)
+        self.btnUpdate()
+
     def btnExit(self, *args):
         self.btnUpdate()
         self.flag_thread_running = False
@@ -102,6 +130,9 @@ class wtimeGUI:
         self.check_time()
         self.wt.printout(self.wtime_out)
         #print(self.wtime_out)
+
+    def btnUnknown(self, *args):
+        print("WARNING: Unknown button pressed")
 
     def show_message_box(self, message):
         self.root.attributes("-topmost", True)
@@ -137,12 +168,16 @@ class wtimeGUI:
                     callback = self.btnExit
                 elif item["title"] == "Update":
                     callback = self.btnUpdate
+                elif item["title"][0] == "T":
+                    callback = self.btnTx
                 else:
                     print("WARNING: Unhespected button named: %s" % item["title"])
-                item["button"] = Button(self.root,
-                                        text=item["title"],
-                                        command=callback).grid(row=item["row"],
-                                                               column=item["col"])
+                    callback = self.btnUnknown
+                item['button_ctl'] = Button(self.root,
+                                            text=item["title"],
+                                            command=callback)
+                item['button_ctl'].grid(row=item["row"],
+                                        column=item["col"])
             else:
               print("WARNING: Skipping unknown type: '%s' for item '%s'"
                     % (item["type"], item["title"]))

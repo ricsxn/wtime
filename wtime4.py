@@ -65,23 +65,23 @@ class wtime:
     def __init__(self, **kwargs):
         for arg in kwargs:
             if arg == 'start_time':
-                self.start_time = self.get_datetime(kwargs[arg])
+                self.start_time = wtime.get_datetime(kwargs[arg])
             elif arg =='current_time':
-                self.current_time = self.get_datetime(kwargs[arg])
+                self.current_time = wtime.get_datetime(kwargs[arg])
             elif arg == 'working_time':
-                self.working_time = self.get_datetime(kwargs[arg])
+                self.working_time = wtime.get_datetime(kwargs[arg])
             elif arg == 'ticket_due':
-                self.ticket_due = self.get_datetime(kwargs[arg])
+                self.ticket_due = wtime.get_datetime(kwargs[arg])
             elif arg == 'pause_time':
-                self.pause_time = self.get_datetime(kwargs[arg])
+                self.pause_time = wtime.get_datetime(kwargs[arg])
             elif arg == 't1':
-                self.t1 = self.get_datetime(kwargs[arg])
+                self.t1 = wtime.get_datetime(kwargs[arg])
             elif arg == 't2':
-                self.t2 = self.get_datetime(kwargs[arg])
+                self.t2 = wtime.get_datetime(kwargs[arg])
             elif arg == 't3':
-                self.t3 = self.get_datetime(kwargs[arg])
+                self.t3 = wtime.get_datetime(kwargs[arg])
             elif arg == 't4':
-                self.t4 = self.get_datetime(kwargs[arg])
+                self.t4 = wtime.get_datetime(kwargs[arg])
 
     def calc(self):
         #self.current_time=dt.datetime.now()
@@ -201,7 +201,18 @@ class wtime:
     def __str__(self):
         return self.__repr__()
 
-    def getTsHMS(self,ts):
+    def printTimeDelta(self,delay):
+        if (delay.days > 0):
+            out = str(delay).replace(" days, ", ":")
+        else:
+            out = "0:" + str(delay)
+            outAr = out.split(':')
+            outAr = ["%02d" % (int(float(x))) for x in outAr[1:]]
+            out   = ":".join(outAr)
+        return out
+
+    @staticmethod
+    def getTsHMS(ts):
         h = m = s = None
         if ts is not None:
             tv = ts.split(':')
@@ -214,16 +225,6 @@ class wtime:
         if s is None: s = 0
         if m is None: m = 0
         return h, m, s
-
-    def printTimeDelta(self,delay):
-        if (delay.days > 0):
-            out = str(delay).replace(" days, ", ":")
-        else:
-            out = "0:" + str(delay)
-            outAr = out.split(':')
-            outAr = ["%02d" % (int(float(x))) for x in outAr[1:]]
-            out   = ":".join(outAr)
-        return out
 
     @staticmethod
     def show_usage(wtimecmd):
@@ -267,11 +268,17 @@ class wtime:
             pass
         return t1, t2, t3, t4, ct
 
-    def get_datetime(self, timestring):
+    @staticmethod
+    def get_ts():
+        now = dt.datetime.now()
+        return now.strftime("%H:%M:%S")
+
+    @staticmethod
+    def get_datetime(timestring):
         if timestring is None:
             return None
         now = dt.datetime.now()
-        h, m, s = self.getTsHMS(timestring)
+        h, m, s = wtime.getTsHMS(timestring)
         return dt.datetime(now.year,now.month,now.day,h,m,s) 
 
     def calc2(self):
