@@ -9,7 +9,7 @@ try:
     import ttk
     import tkMessageBox
     from threading import *
-except ModuleNotFoundError:
+except ImportError:
     from tkinter import *
     from tkinter import ttk
     from threading import *
@@ -195,7 +195,7 @@ class wtimeGUI:
             if item["type"] == "text":
                 if item["name"] == "time remaining perc" or item["name"] == "ticket remaining perc":
                     perc = max(0, self.wtime_out.get(item["name"],""))
-                    item["label_var"].set("%s%%: " % perc)
+                    item["label_var"].set("%2d%%: " % perc)
                 elif item["name"] == "total time" and self.wtime_out.get("consume pause", None) is not None:
                     item["label_var"].set("Consuming pause: ")
                     item["value_var"].set(self.wtime_out["consume pause"])
