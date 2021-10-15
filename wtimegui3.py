@@ -90,7 +90,7 @@ class wtimeGUI:
         self.root.call('wm', 'attributes', '.', '-topmost', True)
         self.root.after_idle(self.root.call, 'wm', 'attributes', '.', '-topmost', False)
         #Thread
-        self.check_time_thread = Thread(target=self.check_time_thread, args=sys.argv)
+        self.check_time_thread = Thread(target=self.check_time_thread, args=(self,))
         self.check_time_thread.start()
         # Main loop
         self.root.mainloop()
