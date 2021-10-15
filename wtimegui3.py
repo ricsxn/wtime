@@ -90,7 +90,7 @@ class wtimeGUI:
         self.root.call('wm', 'attributes', '.', '-topmost', True)
         self.root.after_idle(self.root.call, 'wm', 'attributes', '.', '-topmost', False)
         #Thread
-        self.check_time_thread = Thread(target=self.check_time_thread, args=(self,))
+        self.check_time_thread = Thread(target=self.check_time_thread, args=sys.argv)
         self.check_time_thread.start()
         # Main loop
         self.root.mainloop()
@@ -222,6 +222,8 @@ class wtimeGUI:
         time.sleep(.1)
         try:
             t = currentThread()
+        except NameError as e:
+            t = current_thread()
             print("wtime updating thread started")
             self.flag_thread_running = True
             while self.flag_thread_running:
@@ -243,8 +245,9 @@ class wtimeGUI:
                         time.sleep(.1)
                     else:
                         break
-        except NameError:
-            print("wtime updating thread not started")
+        except Exception as e:
+            print("Exception: %s" % type(e).__name__ )
+            print("wtime updating thread not started: %s" % e)
         print("wtime updating thread terminated")
 
 if __name__ == "__main__":
