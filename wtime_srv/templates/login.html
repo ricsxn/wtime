@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% block content %}
+    {% if logfail %}
+    <div class="alert alert-danger fade show" role="alert">
+        <strong>Could not access!</strong> Please provide provide your email address to register or login.
+    </div>
+    {% endif %}
+    <p>
+        <h4><b>WTime</b> Server</h4>
+    </p>
+    <p>This service allow to manage your working time.</p>
+    <p>This web site uses cookies to access/manage your working time. If you never been here before, please fill the web form below and follow the next instructions, otherwise use the link received after your first registration to access WTime services.</p>
+    <div class="container">
+    <form id="loginForm" action="/login/" method="POST">
+      <div class="form-group row">
+        <label for="login-input-first-name" class="col-2 col-form-label">First name</label>
+        <div class="col-10">
+          <input type="text" class="col-6" id="first_name" name="first_name" aria-describedby="diaIdHelp" placeholder="first name">
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="login-input-last-name" class="col-2 col-form-label">Last name</label>
+        <div class="col-10">
+          <input type="text" class="col-6" id="last_name" name="last_name" aria-describedby="diaIdHelp" placeholder="last name">
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="login-input-email" class="col-2 col-form-label">Email address</label>
+        <div class="col-10">
+          <input type="text" class="col-6" id="user_email" name="user_email" aria-describedby="diaIdHelp" placeholder="email address">
+        </div>
+      </div>
+      <div class="form-group row">
+        <button type="submit" class="btn btn-primary col-2">Register/Login</button>
+      </div>
+    </form>
+    </div>
+{% endblock %}
+
+{% block info %}
+<div class="controls">
+  <a href="/"><button  data-toggle="tooltip" title="Back to home" type="button" id="btn_back" class="btn btn-primary btn-lg"><i class="fa-solid fa-house"></i></button></a>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript">
+  // Main
+  $( document ).ready(function() {
+    value_changed = false; 
+
+    // Set active page in nav pane
+    $('.nav-home').attr('aria-current','page');
+    $('.nav-home').attr('class','nav-link nav-home active');
+    $('.nav-home').attr('href','#');
+
+  });
+ </script>
+{% endblock %}

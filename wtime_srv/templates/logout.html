@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block content %}
+    {% if logfail %}
+    <div class="alert alert-danger fade show" role="alert">
+        <strong>Could not access!</strong> Please provide provide your email address to register or login.
+    </div>
+    {% endif %}
+    <p>
+        <h4><b>WTime</b> Server</h4>
+    </p>
+    <p>You have been usccessfully log-out</p>
+{% endblock %}
+
+{% block info %}
+<div class="controls">
+  <a href="/"><button  data-toggle="tooltip" title="Back to home" type="button" id="btn_back" class="btn btn-primary btn-lg"><i class="fa-solid fa-house"></i></button></a>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript">
+  // Main
+  $( document ).ready(function() {
+    value_changed = false; 
+
+    // Set active page in nav pane
+    $('.nav-home').attr('aria-current','page');
+    $('.nav-home').attr('class','nav-link nav-home active');
+    $('.nav-home').attr('href','#');
+
+  });
+ </script>
+{% endblock %}

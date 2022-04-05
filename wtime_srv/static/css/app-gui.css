@@ -1,0 +1,40 @@
+.gui-content {
+  margin: 30px;
+  margin-top: 1px;
+  margin-bottom: 1px;
+  margin-color: #9090f0;
+}
+
+body {
+  margin-bottom: 48px;
+}
+
+.navbar {
+  border-bottom: 1px solid #162d4d;
+}
+
+.py-2 {
+  background-color: #f8f9fa;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  padding-left: 10px;
+  border-top: 1px solid #162d4d;
+  z-index: 999;
+}
+
+.clbinfo {
+  margin: 0;
+  border: 0;
+  height: 34px;
+  width: 600px;
+  font-size: .8em;
+}
+
+.main-area {
+  margin-top: 5px;
+  margin-bottom: 60px;
+  margin-right: 15px;
+  margin-left: 15px;
+}
+

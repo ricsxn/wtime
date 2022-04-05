@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script defer src="{{ url_for('static', filename='node_modules/@fortawesome/fontawesome-free/js/brands.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='node_modules/@fortawesome/fontawesome-free/js//solid.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='node_modules/@fortawesome/fontawesome-free/js/fontawesome.js') }}"></script>
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="{{ url_for('static', filename='node_modules//jquery/dist/jquery.min.js') }}"></script>
+    <!-- Popper.js -->                          
+    <script src="{{ url_for('static', filename='node_modules/@popperjs/core/dist/umd/popper.js') }}"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="{{ url_for('static', filename='node_modules//bootstrap/dist/js/bootstrap.bundle.js') }}"></script>
+
+    <title>{{ app_info['title'] }}</title>
+
+     <!-- Bootstrap -->
+     <link rel="stylesheet" href="{{ url_for('static', filename='node_modules//bootstrap/dist/css/bootstrap.min.css') }}">
+     <link rel="stylesheet" href="{{ url_for('static', filename='css/app-gui.css') }}">
+     <!-- Icon -->
+     <link rel="icon" href="{{ url_for('static', filename='images/infn.png') }}" sizes="192x192">
+  
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light navbar-fixed-top sticky-top">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="https://www.km3net.org">
+          <img alt="Brand" height="32px" src="{{ url_for('static', filename='images/infn.png') }}">
+        </a>
+        <ul class="navbar-nav me-auto ">
+          <li id="pageTitle" class="nav-item active">
+            <span class="align-middle"><b>{{page_title}}</b></span>
+          </li>  
+        </ul>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        {% if current_user.is_authenticated %}
+        <div class="dropdown">
+          <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-user"></i> {{ current_user.email.split('@')[0] }}
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+          <a class="dropdown-item" href="{{ url_for('user_info') }}"><i class="fa-solid fa-circle-info"></i> Info</a>
+          <a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> LogOut</a>
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+    </nav>
+  </header>
+  <body>
+    <div class="main-area">
+    {% block content %}
+    {% endblock %}
+    </div>
+    <footer class="page-footer font-small special-color-dark py-2">
+      <div class="container" style="max-width: 100%;">
+          {% block info %}
+          {% endblock %}
+      </div>
+    </footer>
+  </body>
+  {% block scripts %}
+  <script type="text/javascript">
+    /* Type here application functions */
+    var proxy_prefix = "{{ app_info['proxy_prefix'] }}";
+
+    // Popover
+    $(function () {
+      $('[data-toggle="popover"]').popover()
+    });
+    // Tooltip
+    $(function () {
+      $('[data-toggle="tooltip"]').tooltip()
+    });
+    // Dropdown
+    $(function () {
+      $(".dropdown-toggle").dropdown();
+    });
+    </script>
+  {% endblock %}
+</html>
