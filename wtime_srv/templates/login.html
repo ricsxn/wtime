@@ -1,10 +1,5 @@
 {% extends "layout.html" %}
 {% block content %}
-    {% if logfail %}
-    <div class="alert alert-danger fade show" role="alert">
-        <strong>Could not access!</strong> Please provide provide your email address to register or login.
-    </div>
-    {% endif %}
     <p>
         <h4><b>WTime</b> Server</h4>
     </p>
@@ -12,22 +7,34 @@
     <p>This web site uses cookies to access/manage your working time. If you never been here before, please fill the web form below and follow the next instructions, otherwise use the link received after your first registration to access WTime services.</p>
     <div class="container">
     <form id="loginForm" action="/login/" method="POST">
+      <div class="form-group row"><h5>Register as new user</h5></div>
       <div class="form-group row">
         <label for="login-input-first-name" class="col-2 col-form-label">First name</label>
         <div class="col-10">
-          <input type="text" class="col-6" id="first_name" name="first_name" aria-describedby="diaIdHelp" placeholder="first name">
+          <input type="text" class="col-6" id="first_name" name="first_name" aria-describedby="first_name_help" placeholder="first name">
+          <small id="first_name_help" class="form-text text-muted">Your first name (optional)</small>
         </div>
       </div>
       <div class="form-group row">
         <label for="login-input-last-name" class="col-2 col-form-label">Last name</label>
         <div class="col-10">
-          <input type="text" class="col-6" id="last_name" name="last_name" aria-describedby="diaIdHelp" placeholder="last name">
+          <input type="text" class="col-6" id="last_name" name="last_name" aria-describedby="last_name_help" placeholder="last name">
+          <small id="last_name_help" class="form-text text-muted">Your last name (optional)</small>
         </div>
       </div>
       <div class="form-group row">
         <label for="login-input-email" class="col-2 col-form-label">Email address</label>
         <div class="col-10">
-          <input type="text" class="col-6" id="user_email" name="user_email" aria-describedby="diaIdHelp" placeholder="email address">
+          <input type="text" class="col-6" id="user_email" name="user_email" aria-describedby="email_help" placeholder="email address">
+          <small id="email_help" class="form-text text-muted">Your email address (mandatory)</small>
+        </div>
+      </div>
+      <div class="form-group row"><h5>or</h5></div>
+      <div class="form-group row">
+        <label for="login-input-hash" class="col-2 col-form-label">Login by user Id</label>
+        <div class="col-10">
+          <input type="password" class="col-6" id="user_hash" name="user_hash" aria-describedby="id_help" placeholder="user identifier">
+          <small id="first_name_help" class="form-text text-muted">Your user identifier as received by activation mail.</small>
         </div>
       </div>
       <div class="form-group row">

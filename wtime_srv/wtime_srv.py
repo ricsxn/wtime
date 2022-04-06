@@ -4,7 +4,6 @@ import datetime
 import time
 import uuid
 import smtplib
-import socket
 from flask import Flask, request, render_template, jsonify, make_response, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_required, login_user, current_user, logout_user
@@ -16,6 +15,7 @@ app.config['SECRET_KEY'] = '1b3eb80ea0ffb1ac13ebe460438e057b'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///wtime_srv.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['BANNED_IPS']='banned_ips'
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 app_info = {
   'title': 'WTime Server',
@@ -94,6 +94,16 @@ def login():
         user_first_name = request.form.get('first_name','').strip()
         user_last_name = request.form.get('last_name','').strip()
         user_email = request.form.get('user_email','').strip()
+        user_hash = request.form.get('user_hash','').strip()
+        if user_hash != '':
+            u = find_user(None, user_hash)
+            if u is not None:
+                login_user(u)
+                resp = make_response(redirect(url_for('index')))
+                resp.set_cookie('user_hash', user_hash)
+                return resp
+            else:
+                return render_template('login_failed.html', page_title='Login failed', app_info=app_info)
         try:
             # Gemerate user_hash if needed
             u = find_user(user_email)
@@ -112,11 +122,13 @@ def login():
                             """Subject: WTime user activation\r\n\r\n"""
                             """Dear %s,\r\n\r\n"""
                             """Please activate your WTime service just clicking on the following link: %s\r\n\r\n"""
-                            """Regards,\r\n"""
+                            """Keep your user identifier '%s' in a safe place and use it to login\r\n\r\n"""
+                            """Best regards,\r\n"""
                             """WTime server\r\n""") % (
                 user_email.strip(),
                 dear_user,
                 activating_url,
+                u.hash,
             )
             server = smtplib.SMTP('localhost')
             server.set_debuglevel(1)
@@ -169,6 +181,7 @@ def go(user_hash):
         u.email = email
         db.session.add(u)
         db.session.commit()
+        db.session.close()
     login_user(u)
     resp = make_response(redirect(url_for('index')))
     resp.set_cookie('user_hash', user_hash)
