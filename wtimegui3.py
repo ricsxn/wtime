@@ -128,8 +128,6 @@ class wtimeGUI:
     def btnExit(self, *args):
         self.btnUpdate()
         self.flag_thread_running = False
-        #Wait for thread completion
-        #self.check_time_thread.join()
         self.root.destroy()
         sys.exit(0)
 
