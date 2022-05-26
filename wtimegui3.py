@@ -129,7 +129,7 @@ class wtimeGUI:
         self.btnUpdate()
         self.flag_thread_running = False
         #Wait for thread completion
-        self.check_time_thread.join()
+        #self.check_time_thread.join()
         self.root.destroy()
         sys.exit(0)
 
@@ -231,6 +231,7 @@ class wtimeGUI:
                 if overtime is not None and self.flag_time_reached == False:
                     print("You've DONE!!!")
                     self.flag_time_reached = True
+                    self.flag_ticket_reached = True
                     gui.show_message_box("You've DONE!!!")
                 elif overtime is not None and self.flag_time_reached == True:
                     self.TotalTimeText = "Overtime: "
