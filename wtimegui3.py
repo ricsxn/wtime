@@ -51,15 +51,15 @@ class wtimeGUI:
         {"type": "text", "name": "total time", "title": "Total Time", "row": 5, "col": 0},
         {"type": "text", "name": "overtime", "title": "Over Time", "row": 5, "col": 2},
         {"type": "text", "name": "time to reach", "title": "Time to reach", "row": 6, "col": 0},
-        {"type": "text", "name": "time remaining", "title": "Time remain", "row": 7, "col": 0},
-        {"type": "text", "name": "time remaining at", "title": "at", "row": 8, "col": 0},
-        {"type": "text", "name": "ticket remaining", "title": "Ticket remain", "row": 9, "col": 0},
-        {"type": "text", "name": "ticket remaining at", "title": "at", "row": 10, "col": 0},
-        {"type": "text", "name": "ticket time", "title": "TicketTime", "row": 11, "col": 0},
-        {"type": "text", "name": "time remaining perc", "title": "%", "row": 7, "col": 2},
-        {"type": "text", "name": "ticket remaining perc", "title": "%", "row": 9, "col": 2},
-        {"type": "progress", "name": "t1", "title": "Time progress", "row": 7, "col": 3},
-        {"type": "progress", "name": "t1", "title": "Ticket progress", "row": 9, "col": 3},
+        {"type": "text", "name": "ticket remaining", "title": "Ticket remain", "row": 7, "col": 0},
+        {"type": "text", "name": "ticket remaining at", "title": "at", "row": 8, "col": 0},
+        {"type": "text", "name": "ticket time", "title": "TicketTime", "row": 9, "col": 0},
+        {"type": "text", "name": "ticket remaining perc", "title": "%", "row": 8, "col": 2},
+        {"type": "progress", "name": "ticket progress", "title": "Ticket progress", "row": 8, "col": 3},
+        {"type": "text", "name": "time remaining", "title": "Time remain", "row": 10, "col": 0},
+        {"type": "text", "name": "time remaining at", "title": "at", "row": 11, "col": 0},
+        {"type": "text", "name": "time remaining perc", "title": "%", "row": 11, "col": 2},
+        {"type": "progress", "name": "time progress", "title": "Time progress", "row": 11, "col": 3},
         {"type": "button", "name": "Tx", "title": "T2", "row": 12, "col": 0},
         {"type": "button", "name": "Update", "title": "Update", "row": 12, "col": 1},
         {"type": "button", "name": "Exit", "title": "Exit", "row": 12, "col": 3},
@@ -147,18 +147,34 @@ class wtimeGUI:
     def gui_build(self):
         for item in self.GUI_data:
             if item["type"] == "text":
+                if item["name"] in ("ticket remaining",
+                                    "ticket remaining at",
+                                    "time remaining",
+                                    "time remaining at",
+                                    "overtime"):
+                    lblFONT_val_style = ("bold",)
+                else:
+                    lblFONT_val_style = ()
+                if item["name"] in ("ticket remaining",
+                                    "ticket remaining perc",
+                                    "time remaining",
+                                    "time remaining perc",
+                                    "overtime"):
+                    lblFONT_lbl_style = ("bold",)
+                else:
+                    lblFONT_lbl_style = ()
                 item["label_var"] = StringVar()
                 item["value_var"] = StringVar()
                 item["label_ctl"] = Label(self.root,
                                           textvariable=item["label_var"],
                                           text="None",
-                                          font=self.lblFONT,
+                                          font=self.lblFONT + lblFONT_lbl_style,
                                           fg=self.lblFGCOLOR).grid(row=item["row"],
                                                                    column=item["col"])
                 item["value_ctl"] = Label(self.root,
                                          textvariable = item["value_var"],
                                          text="None",
-                                         font=self.lblFONT,
+                                         font=self.lblFONT + lblFONT_val_style,
                                          fg=self.lblFGCOLOR).grid(row=item["row"],
                                                                   column=item["col"]+1)
             elif item["type"] == "progress":
@@ -205,8 +221,12 @@ class wtimeGUI:
                     else:
                         pass
             elif item["type"] == "progress":
-                item["progress_ctl"]["value"] = self.wtime_out["time remaining perc"]
-                item["progress_ctl"]["value"] = self.wtime_out["ticket remaining perc"]
+                if item["name"] == "time progress":
+                    item["progress_ctl"]["value"] = self.wtime_out["time remaining perc"]
+                elif item["name"] == "ticket progress":
+                    item["progress_ctl"]["value"] = self.wtime_out["ticket remaining perc"]
+                else:
+                    pass
             elif item["type"] == "button":
                 pass
             else:
