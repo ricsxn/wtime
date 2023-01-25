@@ -19,6 +19,8 @@ __email__ = "riccardo.bruno@gmail.com"
 
 
 class wtimeGUI:
+    
+    theme_name = None 
 
     flag_ticket_reached = False
     flag_time_reached = False
@@ -152,6 +154,8 @@ class wtimeGUI:
         self.root.attributes("-topmost", False)
 
     def gui_build(self):
+        self.style = ttk.Style(self.root)
+        self.theme = self.style.theme_use(self.theme_name)
         for item in self.GUI_data:
             if item["type"] == "text":
                 if item["name"] in ("ticket remaining",
@@ -172,17 +176,17 @@ class wtimeGUI:
                     lblFONT_lbl_style = ()
                 item["label_var"] = StringVar(self.root, "")
                 item["value_var"] = StringVar(self.root, "")
-                item["label_ctl"] = Label(self.root,
+                item["label_ctl"] = ttk.Label(self.root,
                                           textvariable=item["label_var"],
                                           text="None",
                                           font=self.lblFONT + lblFONT_lbl_style,
-                                          fg=self.lblFGCOLOR).grid(row=item["row"],
+                                          foreground=self.lblFGCOLOR).grid(row=item["row"],
                                                                    column=item["col"])
-                item["value_ctl"] = Label(self.root,
+                item["value_ctl"] = ttk.Label(self.root,
                                          textvariable = item["value_var"],
                                          text="None",
                                          font=self.lblFONT + lblFONT_val_style,
-                                         fg=self.lblFGCOLOR).grid(row=item["row"],
+                                         foreground=self.lblFGCOLOR).grid(row=item["row"],
                                                                   column=item["col"]+1)
             elif item["type"] == "progress":
                 item["progress_ctl"] = ttk.Progressbar(self.root,
@@ -201,7 +205,7 @@ class wtimeGUI:
                 else:
                     print("WARNING: Unhespected button named: %s" % item["title"])
                     callback = self.btnUnknown
-                item['button_ctl'] = Button(self.root,
+                item['button_ctl'] = ttk.Button(self.root,
                                             text=item["title"],
                                             command=callback)
                 item['button_ctl'].grid(row=item["row"],
