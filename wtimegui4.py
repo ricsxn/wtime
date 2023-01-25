@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#/usr/bin/env python3
 #
 # wtimegui - Working time class with GUI
 #
@@ -113,7 +113,11 @@ class wtimeGUI:
             pass
 
     def check_time(self):
-        self.wtime_out = self.wt.calc2()
+        try:
+            self.wtime_out = self.wt.calc2()
+        except Exception as e:
+            print(e)
+            self.root.destroy()
         self.gui_update()
 
     def btnTx(self, *args):

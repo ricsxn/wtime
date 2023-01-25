@@ -370,6 +370,7 @@ class wtime:
             else:
                 out["overtime"] = "%s" % self.printTimeDelta((dtm+dta)-dtw)
                 out["time remaining perc"] = 100
+                out["time to reach"] = "reached"
         else:                
             if (dtw+dtp) > (dtm+dta):
                 out["time to reach"] = "%s" % self.printTimeDelta(dtw)
