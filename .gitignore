@@ -9,3 +9,7 @@ __pycache__
 **.swp
 **.db
 _*
+.aaiuser
+.aaipass
+.clockurl
+page_after_login.html

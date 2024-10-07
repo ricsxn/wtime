@@ -64,4 +64,38 @@ Execution
 This directory contains the server version of the wtime project. It provides a multi user web frontend to manage working time.
 ~~~~
 
+
+## Automated clockings retrieval
+
+It is possible to use the automated clocking retrieval, just configuring the python virtual environment and setting up the user credentials.
+
+### Virtual environment
+
+```bash
+python3 -m venv venv 
+. ./venv/bin/activate
+pip install -r requirements.txt 
+```
+
+### User credentials
+
+```bash
+echo "<yourusername>" > .aaiuser
+echo "<yourpassword>" > .aaipass
+echo "<yourclocking_url> > .clockurl
+```
+
+### Execution
+First ensure the virtual environment is active, if not activate it
+
+```bash
+. ./venv/bin/activate
+```
+
+Then start the GUI using the clockings retrieval
+
+```bash
+CLKS=$(python autoclocking.py) && python wtimegui4.py $CLKS
+```
+
 [travis]: https://travis-ci.org/ricsxn/wtime.svg?branch=master
