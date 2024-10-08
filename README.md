@@ -80,9 +80,9 @@ pip install -r requirements.txt
 ### User credentials
 
 ```bash
-echo "<yourusername>" > .aaiuser
-echo "<yourpassword>" > .aaipass
-echo "<yourclocking_url> > .clockurl
+printf "<yourusername>" > .aaiuser
+printf "<yourpassword>" > .aaipass
+printf "<yourclocking_url> > .clockurl
 ```
 
 ### Execution
