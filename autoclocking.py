@@ -11,11 +11,14 @@ from selenium.webdriver.support import expected_conditions as EC
 class AutoClocking:
 
     def __init__(self, userfile, passfile, clockurl):
+        self.ok = True
         self.username = self.read_string_file(userfile)
         self.password = self.read_string_file(passfile)
         self.url = self.read_string_file(clockurl)
-        if self.password is None:
+        if self.password is None or len(self.password) == 0 or\
+            self.username is None or len(self.username) == 0:
             print('WARNING: No password file found',file=sys.stderr)
+            self.ok = False
 
 
     def read_string_file(self, file_path):
@@ -31,6 +34,9 @@ class AutoClocking:
             return None
 
     def get_clocking(self):
+        if self.ok is False:
+            print('ERROR: Autoclocking not well configured',file=sys.stderr)
+            sys.exit(1)
         # Open the browser and go to the login page
         driver = webdriver.Chrome()
         driver.get(self.url)
@@ -41,9 +47,8 @@ class AutoClocking:
         login_button = driver.find_element(By.ID, 'login-btn')  # Replace 'button_id' with the actual ID
 
         # Send the login credentials
-        login_field.send_keys('brunor')  # Enter your username
-        password_field.send_keys('The_D0M_Integrators')  # Enter your password
-
+        login_field.send_keys(self.username)  # Enter your username
+        password_field.send_keys(self.password)  # Enter your password
         # Click the login button
         login_button.click()
 
