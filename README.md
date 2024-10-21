@@ -62,7 +62,7 @@ Execution
 ## wtime_srv
 
 This directory contains the server version of the wtime project. It provides a multi user web frontend to manage working time.
-~~~~
+
 
 
 ## Automated clockings retrieval
@@ -95,7 +95,7 @@ First ensure the virtual environment is active, if not activate it
 Then start the GUI using the clockings retrieval
 
 ```bash
-CLKS=$(python autoclocking.py) && python wtimegui4.py $CLKS
+CLKS=$(python autoclocking.py) && python wtimegui4.py $(echo $CLKS)
 ```
 
 [travis]: https://travis-ci.org/ricsxn/wtime.svg?branch=master
