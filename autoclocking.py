@@ -143,38 +143,21 @@ class AutoClocking:
         #print(f'searching: {day_search} in span elements')
 
         # Cercare il tag che contiene il giorno e il giorno della settimana correnti
-        for span in span_elements:
+        for index, span in enumerate(span_elements):
             if day_search in span.text:
-                #print(f"Tag trovato: {span.get_attribute('outerHTML')}")
-                
-                # Now search for the next 4 <span> elements (entro 1, esco 1, entro 2, esco 2)
-                # Get the parent <td> element where the current span is located
-                parent_element = span.find_element(By.XPATH, './ancestor::td')
-
-                # Find the next 4 <span> elements that contain the time entries
-                # We use XPath to find all subsequent <td> elements and within them <span> with class 'iceOutTxt'
-                next_spans = parent_element.find_elements(By.XPATH, './following::td//span[@class="iceOutTxt"]')[:4]
-
-                # Extract the times from these spans
-                if next_spans:
-                    time_entries = []
-                    for idx, next_span in enumerate(next_spans, start=1):
-                        time_entry = next_span.text
-                        if time_entry == '' or time_entry == '00:00':
-                            time_entry = None
-                        #print(f"Time {idx}: {time_entry}", file=sys.stderr)
-                        time_entries.append(time_entry)
-                    for time_entry in time_entries:
-                        if time_entry is not None:
-                            print(f'{time_entry}', end=' ')
-                else:
-                    print("No time spans found after the matched day.")
-
-                # Exit after processing the first match
-                break
-        else:
-            print("Today tag not found on web page")
-
+                #print(index, span.get_attribute('outerHTML'))
+                # Ora cerca i successivi elementi dopo questo span
+                try:
+                    for i in [1,2,7,8]:
+                        time_span = span_elements[index + i].text.strip()
+                        if time_span is not None and time_span != '':
+                            print(time_span, end=' ')
+                except IndexError:
+                    print("Errore: uno degli elementi successivi non è stato trovato!")
+                break     
+            else:
+                #print("Today tag not found on web page")
+                pass
         # Chiudere il browser
         driver.quit()
 
