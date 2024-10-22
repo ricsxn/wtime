@@ -152,6 +152,8 @@ class AutoClocking:
                         time_span = span_elements[index + i].text.strip()
                         if time_span is not None and time_span != '':
                             print(time_span, end=' ')
+                        else:
+                            break
                 except IndexError:
                     print("Errore: uno degli elementi successivi non è stato trovato!")
                 break     
