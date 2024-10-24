@@ -119,15 +119,16 @@ class AutoClocking:
                 if 'Trasferta' in cells:
                     trip_count += 1
                 if self.today == cells[0]:
-                    today_flag='*'
+                    today_flag = '*'
                     today_row1 = cells
+                else:
+                    today_flag = '' 
                 print(f'{today_flag}{cells}')
                 continue
             else:
                 print(f'{today_flag}\t{cells}')
             if today_flag == '*':
-               today_row2 = cells
-               today_flag = ''
+                today_row2 = cells
                  
         # Chiudere il browser
         driver.quit()
