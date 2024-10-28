@@ -1,3 +1,4 @@
+import argparse
 import sys
 from datetime import datetime
 from selenium import webdriver
@@ -33,7 +34,8 @@ class AutoClocking:
             print(f"Error reading the file {file_path}.")
             return None
 
-    def get_clocking(self):
+    def get_clocking(self, **kwargs):
+        wait = kwargs.get('wait', False)
         if self.ok is False:
             print('ERROR: Autoclocking not well configured',file=sys.stderr)
             sys.exit(1)
@@ -161,11 +163,17 @@ class AutoClocking:
                 #print("Today tag not found on web page")
                 pass
         # Chiudere il browser
+        if wait is True:
+            input("Press <ENTER> to conclude ...")
         driver.quit()
 
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Script con opzione di attesa.")
+    parser.add_argument('-w', '--wait', action='store_true', help="Attende che l'utente prema Enter prima di terminare.")
+    args = parser.parse_args()
+
     auto_clocking = AutoClocking('.aaiuser', '.aaipass', '.clockurl')
-    auto_clocking.get_clocking()
+    auto_clocking.get_clocking(wait=args.wait)
 
