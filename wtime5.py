@@ -96,9 +96,11 @@ class wtime:
             self.overtime=False
             self.remaining_time=self.due_time-self.current_time
             self.to_end=int(100*(self.start_time-self.current_time).total_seconds()/(self.start_time-self.due_time).total_seconds())
+
         if self.t3 is not None and (t3 - t2) > pause_time:
             ticket_due = ticket_due - pause_time
-            pause_time = dt.timedelta(minutes=0) 
+            pause_time = dt.timedelta(minutes=0)
+
         self.ticket_time=self.ticket_due+self.pause_time
         self.ticket_at=self.start_time+self.ticket_time
         if self.current_time > self.ticket_at:
@@ -337,9 +339,14 @@ class wtime:
         dtk=dt.timedelta(0, def_ticket_due[0]*3600 +
                             def_ticket_due[1]*60 +
                             def_ticket_due[2]) #  6:30 ticket threshold
+
         dtm=dt2-dt1 # delta time morning
         dta=dt4-dt3 # delta time afternoon
         did=dt3-dt2 # delta idle time
+
+        if did > self.pause_time:
+            dtk = dtk - self.pause_time
+            self.pause_time = dt.timedelta(0,0)
 
         out["t1"] = "%02d:%02d:%02d" % (t1h,t1m,t1s)
         out["t2"] = "%02d:%02d:%02d" % (t2h,t2m,t2s)
