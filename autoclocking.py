@@ -1,6 +1,7 @@
 import argparse
 import sys
 from datetime import datetime
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -102,24 +103,21 @@ class AutoClocking:
             #print("Il mese e l'anno corrispondono al mese corrente.")
             pass
         else:
-            print(f"Il mese e l'anno non corrispondono. Mese trovato: {input_month_number}, anno: {input_year_number}")
-            
-            # Premere il pulsante per aggiornare il mese
-            button = driver.find_element(By.ID, 'ID_DEL_TUO_BOTTONE')  # Sostituisci con l'ID reale del pulsante
-            button.click()
+            #print(f"Il mese e l'anno non corrispondono. Mese trovato: {input_month_number}, anno: {input_year_number}")
+            try:
+                # Premere il pulsante per aggiornare il mese
+                button = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, "//input[@class='iceCmdBtn' and @value='>>']"))
+                )
+                button.click()
+                time.sleep(1)
 
-        # Aspettare che il nuovo contenuto HTML sia caricato (aspetta fino a 10 secondi)
-        try:
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, 'cartellinoformperiodo:dateRef'))  # Attendi che l'elemento che vuoi sia ricaricato
-            )
-            # Rileggere il nuovo valore dopo l'aggiornamento della pagina
-            updated_input_value = driver.find_element(By.ID, 'cartellinoformperiodo:dateRef').get_attribute('value')
-            #print(f"Nuovo mese dopo aggiornamento: {updated_input_value}")
-        except Exception as e:
-            print("Errore nel caricamento della nuova pagina:", e)
-            sys.exit(1)
-
+                # Rileggere il nuovo valore dopo l'aggiornamento della pagina
+                input_value = driver.find_element(By.ID, 'cartellinoformperiodo:dateRef').get_attribute('value')
+                #print(f"Nuovo mese dopo aggiornamento: {updated_input_value}")
+            except:
+                print("Errore nel caricamento della nuova pagina:", e)
+                sys.exit(1)
 
         # Mappatura dei giorni della settimana dall'inglese all'italiano
         days_map = {
@@ -162,7 +160,7 @@ class AutoClocking:
             else:
                 #print("Today tag not found on web page")
                 pass
-        # Chiudere il browser
+
         if wait is True:
             input("Press <ENTER> to conclude ...")
         driver.quit()
