@@ -346,7 +346,6 @@ class wtime:
 
         if did > self.pause_time:
             dtk = dtk - self.pause_time
-            self.pause_time = dt.timedelta(0,0)
 
         out["t1"] = "%02d:%02d:%02d" % (t1h,t1m,t1s)
         out["t2"] = "%02d:%02d:%02d" % (t2h,t2m,t2s)
