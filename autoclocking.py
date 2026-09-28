@@ -1,177 +1,182 @@
+#!/usr/bin/env python3
+"""
+autoclocking - extract today's clockings from the timecard web portal.
+
+With 2FA enabled the script fills in username and password, then WAITS for you
+to complete the second factor in the browser (visible window) and carries on
+as soon as the timecard page shows up. The second factor is not automated.
+"""
 import argparse
+import os
 import sys
 from datetime import datetime
-import time
+
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
+# =========================================================================
+# CONFIGURATION
+# =========================================================================
+USER_FILE = '.aaiuser'
+PASS_FILE = '.aaipass'
+URL_FILE = '.clockurl'
 
+# Dedicated Chrome profile: keeps cookies/session between runs (if the portal
+# allows it, 2FA may be asked less often). Set to None to use a throwaway
+# profile every time.
+PROFILE_DIR = os.path.expanduser('~/.autoclocking-chrome')
+
+TWO_FA_TIMEOUT = 180       # seconds allowed to complete 2FA by hand
+LOGIN_FIELD_TIMEOUT = 5    # seconds to detect whether a login is needed (session still valid?)
+MONTH_CHANGE_TIMEOUT = 10
+
+PERIOD_INPUT_ID = 'cartellinoformperiodo:dateRef'
+NEXT_MONTH_XPATH = "//input[@class='iceCmdBtn' and @value='>>']"
+# Offsets (relative to the span holding the day) of the spans with the clockings
+CLOCKING_OFFSETS = (1, 2, 7, 8)
+
+# The portal is in Italian: these map its labels
+MONTHS = {
+    "gennaio": 1, "febbraio": 2, "marzo": 3, "aprile": 4,
+    "maggio": 5, "giugno": 6, "luglio": 7, "agosto": 8,
+    "settembre": 9, "ottobre": 10, "novembre": 11, "dicembre": 12,
+}
+WEEKDAYS = ('lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom')
 
 
 class AutoClocking:
 
-    def __init__(self, userfile, passfile, clockurl):
-        self.ok = True
-        self.username = self.read_string_file(userfile)
-        self.password = self.read_string_file(passfile)
-        self.url = self.read_string_file(clockurl)
-        if self.password is None or len(self.password) == 0 or\
-            self.username is None or len(self.username) == 0:
-            print('WARNING: No password file found',file=sys.stderr)
-            self.ok = False
+    def __init__(self, user_file=USER_FILE, pass_file=PASS_FILE, url_file=URL_FILE,
+                 profile_dir=PROFILE_DIR, timeout_2fa=TWO_FA_TIMEOUT):
+        self.username = self._read(user_file)
+        self.password = self._read(pass_file)
+        self.url = self._read(url_file)
+        self.profile_dir = profile_dir
+        self.timeout_2fa = timeout_2fa
+        self.ok = bool(self.username and self.password and self.url)
+        if not self.ok:
+            print('WARNING: missing credentials or URL', file=sys.stderr)
 
-
-    def read_string_file(self, file_path):
+    @staticmethod
+    def _read(path):
         try:
-            with open(file_path, 'r') as file:
-                content = file.read()
-            return content
-        except FileNotFoundError:
-            print(f"The file {file_path} does not exist.")
-            return None
-        except IOError:
-            print(f"Error reading the file {file_path}.")
+            with open(path, 'r') as f:
+                return f.read().strip()   # strip: no trailing newline in user/pass/url
+        except (FileNotFoundError, IOError) as e:
+            print("Cannot read %s: %s" % (path, e), file=sys.stderr)
             return None
 
-    def get_clocking(self, **kwargs):
-        wait = kwargs.get('wait', False)
-        if self.ok is False:
-            print('ERROR: Autoclocking not well configured',file=sys.stderr)
-            sys.exit(1)
-        # Open the browser and go to the login page
-        driver = webdriver.Chrome()
-        driver.get(self.url)
+    # ---------- browser ---------------------------------------------------
 
-        # Find elements by their IDs and send credentials
-        login_field = driver.find_element(By.ID, 'user')  # Replace 'login_id' with the actual ID
-        password_field = driver.find_element(By.ID, 'PASS')  # Replace 'password_id' with the actual ID
-        login_button = driver.find_element(By.ID, 'login-btn')  # Replace 'button_id' with the actual ID
+    def _new_driver(self):
+        opts = Options()
+        if self.profile_dir:
+            opts.add_argument('--user-data-dir=%s' % self.profile_dir)
+        return webdriver.Chrome(options=opts)
 
-        # Send the login credentials
-        login_field.send_keys(self.username)  # Enter your username
-        password_field.send_keys(self.password)  # Enter your password
-        # Click the login button
-        login_button.click()
+    def _login(self, driver):
+        try:
+            login_field = WebDriverWait(driver, LOGIN_FIELD_TIMEOUT).until(
+                EC.presence_of_element_located((By.ID, 'user')))
+        except TimeoutException:
+            return  # no login form: session is probably still active
+        login_field.send_keys(self.username)
+        driver.find_element(By.ID, 'PASS').send_keys(self.password)
+        driver.find_element(By.ID, 'login-btn').click()
 
-        # Optionally, you can wait to observe what happens (useful for debugging)
-        driver.implicitly_wait(5)  # Waits for 5 seconds
+    def _wait_for_timecard(self, driver):
+        print("Waiting for the timecard: if asked, complete 2FA in the "
+              "browser (max %d s)..." % self.timeout_2fa, file=sys.stderr)
+        try:
+            WebDriverWait(driver, self.timeout_2fa).until(
+                EC.presence_of_element_located((By.ID, PERIOD_INPUT_ID)))
+        except TimeoutException:
+            raise RuntimeError("Timecard not reached within %d s (login or 2FA "
+                               "not completed?)" % self.timeout_2fa)
 
-        # Get the page source (HTML) of the page after successful login
-        html_content = driver.page_source
+    @staticmethod
+    def _period_value(driver):
+        return driver.find_element(By.ID, PERIOD_INPUT_ID).get_attribute('value')
 
-        # Print or process the HTML content
-        #with open('cartellino.html', 'w', encoding='utf-8') as file:
-        #    file.write(html_content)
+    def _ensure_current_month(self, driver):
+        value = self._period_value(driver)          # e.g. "ottobre 2024"
+        month_name, year = value.split()
+        now = datetime.now()
+        if MONTHS[month_name.lower()] == now.month and int(year) == now.year:
+            return
+        try:
+            WebDriverWait(driver, MONTH_CHANGE_TIMEOUT).until(
+                EC.element_to_be_clickable((By.XPATH, NEXT_MONTH_XPATH))).click()
+            WebDriverWait(driver, MONTH_CHANGE_TIMEOUT).until(
+                lambda d: self._period_value(d) != value)
+        except TimeoutException:
+            raise RuntimeError("Cannot switch to the current month "
+                               "(shown: %s)" % value)
 
+    # ---------- extraction ------------------------------------------------
 
-        # You can also save the HTML to a file if needed
-        with open('page_after_login.html', 'w', encoding='utf-8') as f:
-            f.write(html_content)
+    def get_clocking(self, wait=False, dump=False):
+        """Return today's clockings as a list of strings, e.g. ['08:01', ...]."""
+        if not self.ok:
+            raise RuntimeError("Autoclocking is not configured correctly")
 
-        # Estrarre il valore del mese dal tag input con id 'cartellinoformperiodo:dateRef'
-        input_element = driver.find_element(By.ID, 'cartellinoformperiodo:dateRef')
-        input_value = input_element.get_attribute('value')  # Questo sarà tipo "ottobre 2024"
+        driver = self._new_driver()
+        try:
+            driver.get(self.url)
+            self._login(driver)
+            self._wait_for_timecard(driver)
 
-        month_map = {
-            "gennaio": 1,
-            "febbraio": 2,
-            "marzo": 3,
-            "aprile": 4,
-            "maggio": 5,
-            "giugno": 6,
-            "luglio": 7,
-            "agosto": 8,
-            "settembre": 9,
-            "ottobre": 10,
-            "novembre": 11,
-            "dicembre": 12
-        }
+            if dump:
+                with open('page_after_login.html', 'w', encoding='utf-8') as f:
+                    f.write(driver.page_source)
 
-        # Dividere 'ottobre 2024' in due parti: mese e anno
-        input_month, input_year = input_value.split()
-        input_month_number = month_map[input_month.lower()]  # Ottieni il numero del mese
-        input_year_number = int(input_year)  # Converti l'anno in intero
+            self._ensure_current_month(driver)
 
-        # Prendere il mese e l'anno correnti
-        current_month_number = datetime.now().month
-        current_year_number = datetime.now().year
+            today = datetime.now()
+            day_search = "%s %s" % (today.strftime("%d"), WEEKDAYS[today.weekday()])
 
-        # Confrontare il mese e l'anno correnti con quelli estratti dalla pagina
-        if input_month_number == current_month_number and input_year_number == current_year_number:
-            #print("Il mese e l'anno corrispondono al mese corrente.")
-            pass
-        else:
-            #print(f"Il mese e l'anno non corrispondono. Mese trovato: {input_month_number}, anno: {input_year_number}")
-            try:
-                # Premere il pulsante per aggiornare il mese
-                button = WebDriverWait(driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH, "//input[@class='iceCmdBtn' and @value='>>']"))
-                )
-                button.click()
-                time.sleep(1)
-
-                # Rileggere il nuovo valore dopo l'aggiornamento della pagina
-                input_value = driver.find_element(By.ID, 'cartellinoformperiodo:dateRef').get_attribute('value')
-                #print(f"Nuovo mese dopo aggiornamento: {updated_input_value}")
-            except:
-                print("Errore nel caricamento della nuova pagina:", e)
-                sys.exit(1)
-
-        # Mappatura dei giorni della settimana dall'inglese all'italiano
-        days_map = {
-            'mon': 'lun',
-            'tue': 'mar',
-            'wed': 'mer',
-            'thu': 'gio',
-            'fri': 'ven',
-            'sat': 'sab',
-            'sun': 'dom'
-        }
-
-        oggi = datetime.now()
-        giorno_corrente = oggi.strftime("%d")  # Formatta il giorno corrente come "04"
-        giorno_settimana_corrente = oggi.strftime("%a").lower()  # Formatta il giorno della settimana come "ven", "lun", ecc.
-        if giorno_settimana_corrente in days_map.keys():
-            giorno_settimana_corrente = days_map[giorno_settimana_corrente]
-
-        day_search = giorno_corrente + " " + giorno_settimana_corrente
-
-        span_elements = driver.find_elements(By.CLASS_NAME, "iceOutTxt")
-
-        #print(f'searching: {day_search} in span elements')
-
-        # Cercare il tag che contiene il giorno e il giorno della settimana correnti
-        for index, span in enumerate(span_elements):
-            if day_search in span.text:
-                #print(index, span.get_attribute('outerHTML'))
-                # Ora cerca i successivi elementi dopo questo span
-                try:
-                    for i in [1,2,7,8]:
-                        time_span = span_elements[index + i].text.strip()
-                        if time_span is not None and time_span != '':
-                            print(time_span, end=' ')
-                        else:
+            spans = driver.find_elements(By.CLASS_NAME, "iceOutTxt")
+            times = []
+            for index, span in enumerate(spans):
+                if day_search in span.text:
+                    for offset in CLOCKING_OFFSETS:
+                        try:
+                            text = spans[index + offset].text.strip()
+                        except IndexError:
+                            print("Error: day row elements not found", file=sys.stderr)
                             break
-                except IndexError:
-                    print("Errore: uno degli elementi successivi non è stato trovato!")
-                break     
-            else:
-                #print("Today tag not found on web page")
-                pass
+                        if not text:
+                            break
+                        times.append(text)
+                    break
 
-        if wait is True:
-            input("Press <ENTER> to conclude ...")
-        driver.quit()
-
+            if wait:
+                input("Press <ENTER> to conclude ...")
+            return times
+        finally:
+            driver.quit()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Script con opzione di attesa.")
-    parser.add_argument('-w', '--wait', action='store_true', help="Attende che l'utente prema Enter prima di terminare.")
+    parser = argparse.ArgumentParser(description="Extract today's clockings from the timecard.")
+    parser.add_argument('-w', '--wait', action='store_true',
+                        help="Wait for ENTER before closing the browser.")
+    parser.add_argument('-t', '--timeout', type=int, default=TWO_FA_TIMEOUT,
+                        help="Seconds to complete 2FA (default %d)." % TWO_FA_TIMEOUT)
+    parser.add_argument('--dump', action='store_true',
+                        help="Save the page after login to page_after_login.html.")
+    parser.add_argument('--no-profile', action='store_true',
+                        help="Use a throwaway Chrome profile instead of the dedicated one.")
     args = parser.parse_args()
 
-    auto_clocking = AutoClocking('.aaiuser', '.aaipass', '.clockurl')
-    auto_clocking.get_clocking(wait=args.wait)
-
+    ac = AutoClocking(profile_dir=None if args.no_profile else PROFILE_DIR,
+                      timeout_2fa=args.timeout)
+    try:
+        print(' '.join(ac.get_clocking(wait=args.wait, dump=args.dump)))
+    except RuntimeError as e:
+        print("ERROR: %s" % e, file=sys.stderr)
+        sys.exit(1)

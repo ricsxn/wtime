@@ -1,21 +1,14 @@
-#!/usr/bin/env python3
+#/usr/bin/env python3
 #
 # wtimegui - Working time class with GUI
 #
 import sys
 import time
-try:
-    from Tkinter import *
-    import ttk
-    import tkMessageBox
-    from threading import *
-except ModuleNotFoundError:
-    from tkinter import *
-    from tkinter import ttk
-    from threading import *
-    from tkinter import messagebox as tkMessageBox
-    
-from wtime3 import wtime
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
+
+from wtime5 import wtime
 
 
 __author__ = "Riccardo Bruno"
@@ -24,235 +17,257 @@ __license__ = "Apache"
 __maintainer__ = "Riccardo Bruno"
 __email__ = "riccardo.bruno@gmail.com"
 
-flag_ticket_reached = False
-flag_time_reached = False
-flag_thread_running = False
-interval_thread_waitcycles = 5
-check_time_thread=None
-wtime_out = None
 
-winTITLE="wtime GUI"
-lblFONT=("Lucida Grande", 12)
-lblFGCOLOR='black'
-
-root = Tk()
-root.title(winTITLE)
-
-T1Content = StringVar()
-T2Content = StringVar()
-T2T1Content = StringVar()
-T3Content = StringVar()
-T4Content = StringVar()
-T4T3Content = StringVar()
-PauseTimeContent = StringVar()
-TotalTimeContent = StringVar()
-TimeToReachContent = StringVar()
-TimeRemainingContent = StringVar()
-TimeRemainingAtContent = StringVar()
-TicketRemainContent = StringVar()
-TicketRemainAtContent = StringVar()
-TicketTimeContent = StringVar()
-TimePercentage = StringVar()
-TicketPercentage = StringVar()
-
-T1Text = StringVar()
-T2Text = StringVar()
-T2T1Text = StringVar()
-T3Text = StringVar()
-T4Text = StringVar()
-T4T3Text = StringVar()
-PauseTimeText = StringVar()
-TotalTimeText = StringVar()
-TimeToReachText = StringVar()
-TimeRemainingText = StringVar()
-TimeRemainingAtText = StringVar()
-TicketRemainText = StringVar()
-TicketRemainAtText = StringVar()
-TicketTimeText = StringVar()
-
-T1Text = "T1 :"
-T2Text = "T2 :"
-T2T1Text = "T2 - T1 :"
-T3Text = "T3 :"
-T4Text = "T4 :"
-T4T3Text = "T4 - T3 :"
-PauseTimeText = "Pause Time :"
-TotalTimeText = "Total Time :"
-TimeToReachText = "Time to reach :"
-TimeRemainingText = "Time remain :"
-TimeRemainingAtText = "at :"
-TicketRemainText = "Ticket remain :"
-TicketRemainAtText = "at :"
-TicketTimeText = "Ticket time :"
-
-
-#style = ttk.Style()
-#style.configure('wt.Horizontal.TProgressbar', fieldbackground='maroon')
-#style.map("Horizontal.TProgressbar",fieldbackground=[("active", "black"), ("disabled", "red")])
-pbarTime = ttk.Progressbar(root, orient=HORIZONTAL, length=64, mode='determinate')
-pbarTicket = ttk.Progressbar(root, orient=HORIZONTAL, length=64, mode='determinate')
-
-def btnExit(*args):
-    global flag_thread_running
-    flag_thread_running = False
-    root.destroy()
-    sys.exit(0)
-
-def btnRecalc(*args):
-    global wtime_out
-    wt = wtime(t1=t1,t2=t2,t3=t3,t4=t4)
-    wtime_out = wt.calc2()
-    wt.printout(wtime_out)
-    gui_update(wtime_out)
-
-def gui_update(out):
-    T1Content.set(out["t1"])
-    T2Content.set(out["t2"])
-    T2T1Content.set(out["t2t1"])
-    T3Content.set(out["t3"])
-    T4Content.set(out["t4"])
-    T4T3Content.set(out["t4t3"])
-    PauseTimeContent.set(out["pause time"])
-    TotalTimeContent.set(out.get("total time",""))
-    TimeToReachContent.set(out.get("time to reach",""))
-    TimeRemainingContent.set(out.get("time remaining","reached"))
-    TimeRemainingAtContent.set(out.get("time remaining at",""))
-    TicketRemainContent.set(out["ticket remaining"])
-    TicketRemainAtContent.set(out.get("ticket remaining at",""))
-    TicketTimeContent.set(out["ticket time"])
-    pbarTime["value"] = out["time remaining perc"]
-    pbarTicket["value"] = out["ticket remaining perc"]
-    TimePercentage.set("%2d %%" % out["time remaining perc"])
-    TicketPercentage.set("%2d %%" % out["ticket remaining perc"])
+class wtimeGUI:
     
-def check_time():
-    global root
-    global wtime_out
-    global flag_ticket_reached
-    global flag_time_reached
-    global flag_thread_running
-    global interval_thread_waitcycles
-    time.sleep(1)
-    flag_thread_running = True
-    try:
-        t = currentThread()
-    except NameError:
-        t = current_thread()
-    while flag_thread_running:
-        if wtime_out.get("overtime",None) is not None and flag_time_reached == False:
-            root.attributes("-topmost", True)
-            print("You've DONE!!!")
-            tkMessageBox.showinfo("wtimegui", "You've DONE!!!",parent=root)
-            flag_time_reached = True           
-            flag_thread_running = False            
-            root.attributes("-topmost", False)
-            continue
-        elif wtime_out["ticket remaining"] == "reached" and flag_ticket_reached == False:
-            root.attributes("-topmost", True)
-            print("Ticket reached!!!")
-            tkMessageBox.showinfo("wtimegui", "Ticket reached!!!",parent=root)
-            flag_ticket_reached = True
-            root.attributes("-topmost", False)
-        btnRecalc()
-        for i in range(1,interval_thread_waitcycles):
-            if flag_thread_running:
-                time.sleep(1)
-            else:
-                break
+    theme_name = None 
 
+    flag_ticket_reached = False
+    flag_time_reached = False
+    check_interval = 5000
+    wtime_out = {}
+
+    winTITLE="wtime GUI"
+    lblFONT=("Lucida Grande", 12)
+    lblFGCOLOR='black'
+
+    root = None
+
+    GUI_data = (
+        {"type": "text", "name": "t1", "title": "T1", "row": 0, "col": 0},
+        {"type": "text", "name": "t2", "title": "T2", "row": 1, "col": 0},
+        {"type": "text", "name": "t2t1", "title": "T2 - T1", "row": 1, "col": 2},
+        {"type": "text", "name": "t3", "title": "T3", "row": 2, "col": 0},
+        {"type": "text", "name": "t4", "title": "T4", "row": 3, "col": 0},
+        {"type": "text", "name": "t4t3", "title": "T4 - T3", "row": 3, "col": 2},
+        {"type": "text", "name": "pause time", "title": "Pause Time", "row": 4, "col": 0},
+        {"type": "text", "name": "total time", "title": "Total Time", "row": 5, "col": 0},
+        {"type": "text", "name": "overtime", "title": "Over Time", "row": 5, "col": 2},
+        {"type": "text", "name": "time to reach", "title": "Time to reach", "row": 6, "col": 0},
+        {"type": "text", "name": "ticket remaining", "title": "Ticket remain", "row": 7, "col": 0},
+        {"type": "text", "name": "ticket remaining at", "title": "at", "row": 8, "col": 0},
+        {"type": "text", "name": "ticket time", "title": "TicketTime", "row": 9, "col": 0},
+        {"type": "text", "name": "ticket remaining perc", "title": "%", "row": 8, "col": 2},
+        {"type": "progress", "name": "ticket progress", "title": "Ticket progress", "row": 8, "col": 3},
+        {"type": "text", "name": "time remaining", "title": "Time remain", "row": 10, "col": 0},
+        {"type": "text", "name": "time remaining at", "title": "at", "row": 11, "col": 0},
+        {"type": "text", "name": "time remaining perc", "title": "%", "row": 11, "col": 2},
+        {"type": "progress", "name": "time progress", "title": "Time progress", "row": 11, "col": 3},
+        {"type": "button", "name": "Tx", "title": "T2", "row": 12, "col": 0},
+        {"type": "button", "name": "Update", "title": "Update", "row": 12, "col": 1},
+        {"type": "button", "name": "Exit", "title": "Exit", "row": 12, "col": 3},
+    )
+
+    def get_item(self, type, name):
+        item_result = None
+        for item in self.GUI_data:
+            if item["type"] == type and item["name"] == name:
+                item_result = item
+                break
+        return item_result
+
+    def __init__(self):
+        # wtime4
+        self.t1, self.t2, self.t3, self.t4, self.ct = wtime.getTimes(sys.argv)
+        self.wt = wtime(t1=self.t1, t2=self.t2, t3=self.t3, t4=self.t4, current_time=self.ct)
+        # GUI
+        self.root = Tk()
+        self.root.geometry("-0+0")
+        self.root.title(self.winTITLE)
+        
+        self.menu = Menu(self.root)
+        self.root.config(menu=self.menu)
+        self.file_menu = Menu(self.menu)
+        self.menu.add_cascade(label="File", menu=self.file_menu)
+        self.file_menu.add_command(label="Exit", command=self.btnExit)
+        self.help_menu = Menu(self.menu)
+        self.menu.add_cascade(label="Help", menu=self.help_menu)
+        self.help_menu.add_command(label="About", command=self.about)
+        
+        
+        self.gui_build()
+        self.check_time()
+        self.root.bind('<Return>',self.btnUpdate)
+        self.root.bind('<space>',self.btnUpdate)
+        self.root.bind('<Escape>',self.btnExit)
+        self.root.lift()
+        self.root.protocol("WM_DELETE_WINDOW", self.btnExit)
+        self.root.call('wm', 'attributes', '.', '-topmost', True)        
+        self.root.after_idle(self.root.call, 'wm', 'attributes', '.', '-topmost', False)
+        self.root.after(self.check_interval, self.check_time_gui)
+        self.root.mainloop()
+
+    def about(self):
+        self.root.attributes("-topmost", True)
+        messagebox.showinfo(self.winTITLE, "wtimeGUI by Riccardo Bruno", parent=self.root)
+        self.root.attributes("-topmost", False)
+
+    def update_T_button(self):
+        button = self.get_item("button","Tx")["button_ctl"]
+        if self.t4 is not None:
+            button["text"] = "T-"
+            button["state"] = DISABLED
+        elif self.t3 is not None:
+            button["text"] = "T4"
+        elif self.t2 is not None:
+            button["text"] = "T3"
+        else:
+            pass
+
+    def check_time(self):
+        try:
+            self.wtime_out = self.wt.calc2()
+        except Exception as e:
+            print(e)
+            self.root.destroy()
+        self.gui_update()
+
+    def btnTx(self, *args):
+        ts = wtime.get_ts()
+        if self.t2 is None:
+            self.t2 = ts
+        elif self.t3 is None:
+            self.t3 = ts
+        elif self.t4 is None:
+            self.t4 = ts
+        else:
+            return
+        self.wt = wtime(t1=self.t1, t2=self.t2, t3=self.t3, t4=self.t4, current_time=self.ct)
+        self.update_T_button()
+        self.btnUpdate()
+
+    def btnExit(self, *args):
+        self.btnUpdate()
+        self.root.destroy()
+
+    def btnUpdate(self, *args):
+        self.check_time()
+        self.wt.printout(self.wtime_out)
+        #print(self.wtime_out)
+
+    def btnUnknown(self, *args):
+        print("WARNING: Unknown button pressed")
+
+    def show_message_box(self, message):
+        self.root.attributes("-topmost", True)
+        messagebox.showinfo(self.winTITLE, message, parent=self.root)
+        self.root.attributes("-topmost", False)
+
+    def gui_build(self):
+        self.style = ttk.Style(self.root)
+        self.theme = self.style.theme_use(self.theme_name)
+        for item in self.GUI_data:
+            if item["type"] == "text":
+                if item["name"] in ("ticket remaining",
+                                    "ticket remaining at",
+                                    "time remaining",
+                                    "time remaining at",
+                                    "overtime"):
+                    lblFONT_val_style = ("bold",)
+                else:
+                    lblFONT_val_style = ()
+                if item["name"] in ("ticket remaining",
+                                    "ticket remaining perc",
+                                    "time remaining",
+                                    "time remaining perc",
+                                    "overtime"):
+                    lblFONT_lbl_style = ("bold",)
+                else:
+                    lblFONT_lbl_style = ()
+                item["label_var"] = StringVar(self.root, "")
+                item["value_var"] = StringVar(self.root, "")
+                item["label_ctl"] = ttk.Label(self.root,
+                                          textvariable=item["label_var"],
+                                          text="None",
+                                          font=self.lblFONT + lblFONT_lbl_style,
+                                          foreground=self.lblFGCOLOR).grid(row=item["row"],
+                                                                   column=item["col"])
+                item["value_ctl"] = ttk.Label(self.root,
+                                         textvariable = item["value_var"],
+                                         text="None",
+                                         font=self.lblFONT + lblFONT_val_style,
+                                         foreground=self.lblFGCOLOR).grid(row=item["row"],
+                                                                  column=item["col"]+1)
+            elif item["type"] == "progress":
+                item["progress_ctl"] = ttk.Progressbar(self.root,
+                                                       orient=HORIZONTAL,
+                                                       length=64,
+                                                       mode='determinate')
+                item["progress_ctl"].grid(row=item["row"],
+                                          column=item["col"])
+            elif item["type"] == "button":
+                if item["title"] == "Exit":
+                    callback = self.btnExit
+                elif item["title"] == "Update":
+                    callback = self.btnUpdate
+                elif item["title"][0] == "T":
+                    callback = self.btnTx
+                else:
+                    print("WARNING: Unhespected button named: %s" % item["title"])
+                    callback = self.btnUnknown
+                item['button_ctl'] = ttk.Button(self.root,
+                                            text=item["title"],
+                                            command=callback)
+                item['button_ctl'].grid(row=item["row"],
+                                        column=item["col"])
+            else:
+              print("WARNING: Skipping unknown type: '%s' for item '%s'"
+                    % (item["type"], item["title"]))
+        self.update_T_button()
+
+    def gui_update(self):
+        for item in self.GUI_data:
+            if item["type"] == "text":
+                if item["name"] == "time remaining perc" or item["name"] == "ticket remaining perc":
+                    perc = max(0, self.wtime_out.get(item["name"],""))
+                    item["label_var"].set("%2d%%: " % perc)
+                elif item["name"] == "total time" and self.wtime_out.get("consume pause", None) is not None:
+                    item["label_var"].set("Consuming pause: ")
+                    item["value_var"].set(self.wtime_out["consume pause"])
+                else:
+                    value = self.wtime_out.get(item["name"], "")
+                    if value != "":
+                        item["label_var"].set(item["title"] + " :")
+                        item["value_var"].set(value)
+                    else:
+                        item["label_var"].set("")
+                        item["value_var"].set("")
+            elif item["type"] == "progress":
+                if item["name"] == "time progress":
+                    item["progress_ctl"]["value"] = self.wtime_out["time remaining perc"]
+                elif item["name"] == "ticket progress":
+                    item["progress_ctl"]["value"] = self.wtime_out["ticket remaining perc"]
+                else:
+                    pass
+            elif item["type"] == "button":
+                pass
+            else:
+                print("WARNING: Skipping unknown type: '%s' for item '%s'"
+                        % (item["type"], item["title"]))
+    
+    def check_time_gui(self):
+        notify_message = None        
+        # Update working time values
+        prev_out = "%s" %self.wtime_out
+        self.check_time()
+        # Check for ticket and time done
+        if self.wtime_out["time to reach"] == "reached" and not self.flag_time_reached:
+            print(prev_out + " -> %s" % self.wtime_out)
+            notify_message = "You've DONE!!!"
+            self.flag_time_reached = True
+            self.flag_ticket_reached = True
+        elif self.wtime_out["ticket remaining"] == "reached" and not self.flag_ticket_reached:
+            print(prev_out + " -> %s" % self.wtime_out)
+            notify_message = "Ticket reached!!!"
+            self.flag_ticket_reached = True
+        # Notify message if needed
+        if notify_message is not None:
+            print(notify_message)
+            self.show_message_box(notify_message)
+            #self.gui_build()
+            notify_message = None        
+        self.root.after(self.check_interval, self.check_time_gui)
 
 if __name__ == "__main__":
-    t1,t2,t3,t4 = wtime.getTimes("wtime3")
-    wt = wtime(t1=t1,t2=t2,t3=t3,t4=t4)
-    wtime_out = wt.calc2()
-    wt.printout(wtime_out)
-    
-    gui_update(wtime_out)        
-    GUI = ( 
-       {"label": T1Text,
-        "label content": T1Content,
-        "row": 0,
-        "column": 0},
-       {"label": T2Text,
-        "label content": T2Content,
-        "row": 1,
-        "column": 0},
-       {"label": T2T1Text,
-        "label content": T2T1Content,
-        "row": 1,
-        "column": 2},
-       {"label": T3Text,
-        "label content": T3Content,
-        "row": 2,
-        "column": 0},
-       {"label": T4Text,
-        "label content": T4Content,
-        "row": 3,
-        "column": 0},
-       {"label": T4T3Text,
-        "label content": T4T3Content,
-        "row": 3,
-        "column": 2},
-       {"label": PauseTimeText,
-        "label content": PauseTimeContent,
-        "row": 4,
-        "column": 0},
-       {"label": TotalTimeText,
-        "label content": TotalTimeContent,
-        "row": 5,
-        "column": 0},
-       {"label": TimeToReachText,
-        "label content": TimeToReachContent,
-        "row": 6,
-        "column": 0},
-       {"label": TimeRemainingText,
-        "label content": TimeRemainingContent,
-        "row": 7,
-        "column": 0},
-       {"label": TimeRemainingAtText,
-        "label content": TimeRemainingAtContent,
-        "row": 8,
-        "column": 0},
-       {"label": TicketRemainText,
-        "label content": TicketRemainContent,
-        "row": 9,
-        "column": 0},
-       {"label": TicketRemainAtText,
-        "label content": TicketRemainAtContent,
-        "row": 10,
-        "column": 0},
-       {"label": TicketTimeContent,
-        "label content": TicketTimeContent,
-        "row":11,
-        "column": 0},
-       {"label": TimePercentage,
-        "label content": None,
-        "row": 7,
-        "column": 2},
-       {"label": TicketPercentage,
-        "label content": None,
-        "row": 9,
-        "column": 2},
-    )
-    
-    for gui_element in GUI:
-        Label(root, textvariable=gui_element["label"], text=gui_element["label"], font=lblFONT, fg=lblFGCOLOR).grid(row=gui_element["row"], column=gui_element["column"])
-        if gui_element["label content"] is not None:
-            Label(root, textvariable = gui_element["label content"], text=gui_element["label content"], font=lblFONT, fg=lblFGCOLOR).grid(row=gui_element["row"], column=gui_element["column"]+1)    
-    pbarTime.grid(row=7,column=3)
-    pbarTicket.grid(row=9,column=3)
-    Button(root, text="Exit", command=btnExit).grid(row=12,column=3)
-    Button(root, text="Recalc", command=btnRecalc).grid(row=12,column=1)
-
-    root.bind('<Return>',btnRecalc)
-    root.bind('<space>',btnRecalc)
-    root.bind('<Escape>',btnExit)
-    
-    check_time_thread = Thread(target=check_time, args=())
-    check_time_thread.start()
-    root.lift ()
-    root.protocol("WM_DELETE_WINDOW", btnExit)
-    root.call('wm', 'attributes', '.', '-topmost', True)
-    root.after_idle(root.call, 'wm', 'attributes', '.', '-topmost', False)
-    root.mainloop()
+    gui = wtimeGUI()
 
