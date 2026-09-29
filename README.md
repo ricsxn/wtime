@@ -1,101 +1,114 @@
-![testing status][travis]
-
 # wtime
-Working time watcher
 
-This python code allows to monitor working time providing real time statistics such as:
+Working-time tracker for INFN research staff (levels I-III / technologist).
+Computes daily working time, overtime and meal-ticket eligibility from your
+clock-in/clock-out times, either from numbers you type or fetched
+automatically from the timecard portal.
 
-`Start time`    : The time the worker has started
+## Install
 
-`Working time`  : The time the worker has to perform (excluding pause time)
-
-`Pause time`    : The time allowed for the lunch break
-
-`Current time`  : The time when the user is extracting statistics
-
-`Current elapse`: How much time the worker has already performed
-
-`Due time`      : The time when the user accomplishes her work
-
-`Remaining time`: How much time the worker has to perform yet
-
-`Ticket time`   : The necessary time to gain the ticket
-
-`Ticket at`     : The time when ticket will be gained
-
-`Ticket remain` : How much time the worker needs to gain ticket
-
-
-Execution
-
-`./wtime.py <start_time_hour> <start_time_minute> [start_time_seconds]`
-
-Working parameters such as: working time, pause time, ticket time, etc must be configured modifying the code or wtime class variable members.
-
-# wtime2
-Working time watcher, to be used in case working time has been splitted in two intervals (morning+afternoon)
-
-`./wtime2.py t1 [[[t2] t3] t4]`
-
-Where tx is a timestamp in the form of HH:MM:SS
-
-# wtime3
-This version works exactly like wtime2 integrating the new calculation using the wtime object. This version is used by the wtimegui wich provides a tkinter based GUI.
-
-# wtimegui.py
-
-Execution
-
-`./wtimegui.py <start_timestamp> [<begin_pause_timestamp> <resume_pause_timestamp> <end_timestamp>]`
-
-## warning
-
-* On ***MacOS** it could be necessary to execute the following command:
- `defaults write org.python.python ApplePersistenceIgnoreState NO`
-
-* wtimegui requires tkinter to work, please refer to your specific OS way to install it, below some examples:
-  * Fedora35: `dnf install -y python3-tkinter`
-  * MacOS: `brew install python-tk`
-  * CentOS7: `yum isntall tkinter`
-  
-
-## wtime_srv
-
-This directory contains the server version of the wtime project. It provides a multi user web frontend to manage working time.
-
-
-
-## Automated clockings retrieval
-
-It is possible to use the automated clocking retrieval, just configuring the python virtual environment and setting up the user credentials.
-
-### Virtual environment
-
-```bash
-python3 -m venv venv 
-. ./venv/bin/activate
-pip install -r requirements.txt 
+```
+pip install .
 ```
 
-### User credentials
+This installs a single `wtime` command (see `setup.py`). Requires Python
+>= 3.7. The `-a`/`-d` portal-fetch options additionally require Chrome and
+its matching chromedriver (installed automatically by `selenium` >= 4.6 via
+Selenium Manager).
 
-```bash
-printf "<yourusername>" > .aaiuser
-printf "<yourpassword>" > .aaipass
-printf "<yourclocking_url> > .clockurl
+The GUI (`-g`) uses Tkinter, part of the Python standard library. On some
+platforms it needs a separate system package — e.g. on macOS with Homebrew:
+`brew install python-tk@<your-python-version>`.
+
+## Usage
+
+```
+wtime T1 [T2 [T3 [T4]]]        print a report for the given clockings
+wtime T1 [T2 [T3 [T4]]] -g     same, opening the Tkinter GUI instead
+wtime -a                       fetch today's clockings from the portal
+wtime -d                       fetch today's timecard summary from the portal
 ```
 
-### Execution
-First ensure the virtual environment is active, if not activate it
+`T1`..`T4` are times in `H:M[:S]` format:
+- `T1` clock-in
+- `T2` clock-out for the break (omit if you haven't taken one yet)
+- `T3` clock-in back from the break
+- `T4` clock-out for the day
 
-```bash
-. ./venv/bin/activate
+Only `T1` is required; missing later times are treated as "now" (or as the
+time given with `-c`).
+
+```
+wtime 8:00 13:00 13:30 16:30      full day, 30' break clocked
+wtime 8:00                        just started, report so far
+wtime 8:00 -c 15:00                simulate a different current time
+wtime 8:00 -g                     same, in the GUI
 ```
 
-Then start the GUI using the clockings retrieval
+Other options:
 
-```bash
-CLKS=$(python autoclocking.py) && python wtimegui4.py $(echo $CLKS)
+| Flag             | Meaning                                              |
+|-------------------|-------------------------------------------------------|
+| `-c, --current-time` | simulate a different current time                  |
+| `-g, --gui`        | open the Tkinter GUI instead of printing a report     |
+| `-a, --auto`       | fetch today's clockings from the portal (autoclocking)|
+| `-d, --data`       | fetch today's timecard summary (autoclocking_data)    |
+| `-t, --timeout`    | seconds allowed to complete 2FA by hand (`-a`/`-d`)   |
+| `--dump`           | save the portal page to `page_after_login.html`       |
+| `--no-profile`     | use a throwaway Chrome profile instead of the saved one|
+
+`-a`/`-d` cannot be combined with explicit times, `-g` or `-c`: they read
+today's clockings from the portal instead of from you.
+
+## Configuring the rules
+
+All the section-specific numbers live in one place, at the top of
+`wtimecore.py`:
+
+- `WORK_DURATION` — daily working time due (default 7h12m)
+- `DEFAULT_PAUSE` — pause assumed when none is clocked (default 30')
+- `TICKET_MIN_WORK` — net work required for the meal ticket (default 6h)
+- `TICKET_MIN_PAUSE` — minimum real pause for the meal ticket to be valid
+  (default 30')
+
+These follow the national research CCNL (art. 5, commi 2 and 10, for the
+meal ticket rule). Check with your section's staff
+office before relying on the defaults, especially `TICKET_MIN_PAUSE`.
+
+## Portal autoclocking (`-a` / `-d`)
+
+`-a` and `-d` log into the timecard portal and read today's data instead of
+you typing it. They need three files in the working directory:
+
+- `.aaiuser` — your portal username
+- `.aaipass` — your portal password
+- `.clockurl` — the portal URL
+
+2FA is **not** automated: the script fills in username and password, opens
+a visible Chrome window, and waits (default 180s, `-t` to change) for you
+to complete the second factor by hand before reading the page. A dedicated
+Chrome profile (`~/.autoclocking-chrome`) is reused between runs so the
+portal may remember the device and ask for 2FA less often; use
+`--no-profile` to opt out.
+
+`-a` prints today's clockings (equivalent to what you'd type as `T1 T2 T3
+T4`). `-d` prints a fuller summary: worked hours, past-month hours, today's
+row and the ticket/trip counters read from the monthly table.
+
+## Project layout
+
+```
+wtimecore.py         working-time calculation (no CLI, no printing besides
+                     printout()) — this is where the configuration lives
+wtimegui.py          Tkinter GUI, built on wtimecore
+wtimecli.py          the wtime command: argument parsing and dispatch
+portal_session.py    shared login/2FA-wait/browser-profile logic
+autoclocking.py      -a: reads today's raw clockings from the portal
+autoclocking_data.py -d: reads worked hours, tickets and trip days
+setup.py             packaging (console_scripts entry point: wtime)
 ```
 
-[travis]: https://travis-ci.org/ricsxn/wtime.svg?branch=master
+`autoclocking.py` and `autoclocking_data.py` can also be run directly
+(`python3 autoclocking.py`) for standalone testing; `wtimecli.py` is the
+normal way to use them through `wtime -a`/`wtime -d`.
+
