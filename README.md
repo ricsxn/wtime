@@ -43,6 +43,7 @@ wtime 8:00 13:00 13:30 16:30      full day, 30' break clocked
 wtime 8:00                        just started, report so far
 wtime 8:00 -c 15:00                simulate a different current time
 wtime 8:00 -g                     same, in the GUI
+TS=$(wtime -a) && wtime $TS -g    use a single line with current clocking
 ```
 
 Other options:
