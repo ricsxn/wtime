@@ -1,15 +1,16 @@
-#/usr/bin/env python3
-#
-# wtimegui - Working time class with GUI
-#
-import sys
-import time
+#!/usr/bin/env python3
+"""
+wtimegui - Tkinter GUI on top of wtimecore.wtime.
+
+Not meant to parse the command line itself: wtimecli.py builds a wtimeGUI
+instance with explicit t1..t4/current_time. Running this file directly opens
+the GUI with no clockings prefilled (only useful for a quick UI smoke test).
+"""
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 
-from wtime import wtime
-
+from wtimecore import wtime
 
 __author__ = "Riccardo Bruno"
 __copyright__ = "2017"
@@ -19,17 +20,17 @@ __email__ = "riccardo.bruno@gmail.com"
 
 
 class wtimeGUI:
-    
-    theme_name = None 
+
+    theme_name = None
 
     flag_ticket_reached = False
     flag_time_reached = False
     check_interval = 5000
     wtime_out = {}
 
-    winTITLE="wtime GUI"
-    lblFONT=("Lucida Grande", 12)
-    lblFGCOLOR='black'
+    winTITLE = "wtime GUI"
+    lblFONT = ("Lucida Grande", 12)
+    lblFGCOLOR = 'black'
 
     root = None
 
@@ -59,22 +60,19 @@ class wtimeGUI:
     )
 
     def get_item(self, type, name):
-        item_result = None
         for item in self.GUI_data:
             if item["type"] == type and item["name"] == name:
-                item_result = item
-                break
-        return item_result
+                return item
+        return None
 
-    def __init__(self):
-        # wtime4
-        self.t1, self.t2, self.t3, self.t4, self.ct = wtime.getTimes(sys.argv)
-        self.wt = wtime(t1=self.t1, t2=self.t2, t3=self.t3, t4=self.t4, current_time=self.ct)
-        # GUI
+    def __init__(self, t1=None, t2=None, t3=None, t4=None, current_time=None):
+        self.t1, self.t2, self.t3, self.t4, self.ct = t1, t2, t3, t4, current_time
+        self.wt = wtime(t1=self.t1, t2=self.t2, t3=self.t3, t4=self.t4,
+                        current_time=self.ct)
+
         self.root = Tk()
-        self.root.geometry("-0+0")
         self.root.title(self.winTITLE)
-        
+
         self.menu = Menu(self.root)
         self.root.config(menu=self.menu)
         self.file_menu = Menu(self.menu)
@@ -83,16 +81,21 @@ class wtimeGUI:
         self.help_menu = Menu(self.menu)
         self.menu.add_cascade(label="Help", menu=self.help_menu)
         self.help_menu.add_command(label="About", command=self.about)
-        
-        
+
         self.gui_build()
         self.check_time()
-        self.root.bind('<Return>',self.btnUpdate)
-        self.root.bind('<space>',self.btnUpdate)
-        self.root.bind('<Escape>',self.btnExit)
+        # Position the window flush to the top-right corner, now that its
+        # real size is known (doing this before gui_build() anchored the
+        # window to the *default* small size, so it grew off-screen to the
+        # right once the widgets were added).
+        self.root.update_idletasks()
+        self.root.geometry("-0+0")
+        self.root.bind('<Return>', self.btnUpdate)
+        self.root.bind('<space>', self.btnUpdate)
+        self.root.bind('<Escape>', self.btnExit)
         self.root.lift()
         self.root.protocol("WM_DELETE_WINDOW", self.btnExit)
-        self.root.call('wm', 'attributes', '.', '-topmost', True)        
+        self.root.call('wm', 'attributes', '.', '-topmost', True)
         self.root.after_idle(self.root.call, 'wm', 'attributes', '.', '-topmost', False)
         self.root.after(self.check_interval, self.check_time_gui)
         self.root.mainloop()
@@ -103,7 +106,7 @@ class wtimeGUI:
         self.root.attributes("-topmost", False)
 
     def update_T_button(self):
-        button = self.get_item("button","Tx")["button_ctl"]
+        button = self.get_item("button", "Tx")["button_ctl"]
         if self.t4 is not None:
             button["text"] = "T-"
             button["state"] = DISABLED
@@ -132,7 +135,8 @@ class wtimeGUI:
             self.t4 = ts
         else:
             return
-        self.wt = wtime(t1=self.t1, t2=self.t2, t3=self.t3, t4=self.t4, current_time=self.ct)
+        self.wt = wtime(t1=self.t1, t2=self.t2, t3=self.t3, t4=self.t4,
+                        current_time=self.ct)
         self.update_T_button()
         self.btnUpdate()
 
@@ -143,7 +147,6 @@ class wtimeGUI:
     def btnUpdate(self, *args):
         self.check_time()
         self.wt.printout(self.wtime_out)
-        #print(self.wtime_out)
 
     def btnUnknown(self, *args):
         print("WARNING: Unknown button pressed")
@@ -158,19 +161,13 @@ class wtimeGUI:
         self.theme = self.style.theme_use(self.theme_name)
         for item in self.GUI_data:
             if item["type"] == "text":
-                if item["name"] in ("ticket remaining",
-                                    "ticket remaining at",
-                                    "time remaining",
-                                    "time remaining at",
-                                    "overtime"):
+                if item["name"] in ("ticket remaining", "ticket remaining at",
+                                    "time remaining", "time remaining at", "overtime"):
                     lblFONT_val_style = ("bold",)
                 else:
                     lblFONT_val_style = ()
-                if item["name"] in ("ticket remaining",
-                                    "ticket remaining perc",
-                                    "time remaining",
-                                    "time remaining perc",
-                                    "overtime"):
+                if item["name"] in ("ticket remaining", "ticket remaining perc",
+                                    "time remaining", "time remaining perc", "overtime"):
                     lblFONT_lbl_style = ("bold",)
                 else:
                     lblFONT_lbl_style = ()
@@ -183,18 +180,17 @@ class wtimeGUI:
                                           foreground=self.lblFGCOLOR).grid(row=item["row"],
                                                                    column=item["col"])
                 item["value_ctl"] = ttk.Label(self.root,
-                                         textvariable = item["value_var"],
+                                         textvariable=item["value_var"],
                                          text="None",
                                          font=self.lblFONT + lblFONT_val_style,
                                          foreground=self.lblFGCOLOR).grid(row=item["row"],
-                                                                  column=item["col"]+1)
+                                                                  column=item["col"] + 1)
             elif item["type"] == "progress":
                 item["progress_ctl"] = ttk.Progressbar(self.root,
                                                        orient=HORIZONTAL,
                                                        length=64,
                                                        mode='determinate')
-                item["progress_ctl"].grid(row=item["row"],
-                                          column=item["col"])
+                item["progress_ctl"].grid(row=item["row"], column=item["col"])
             elif item["type"] == "button":
                 if item["title"] == "Exit":
                     callback = self.btnExit
@@ -203,25 +199,22 @@ class wtimeGUI:
                 elif item["title"][0] == "T":
                     callback = self.btnTx
                 else:
-                    print("WARNING: Unhespected button named: %s" % item["title"])
+                    print("WARNING: Unexpected button named: %s" % item["title"])
                     callback = self.btnUnknown
-                item['button_ctl'] = ttk.Button(self.root,
-                                            text=item["title"],
-                                            command=callback)
-                item['button_ctl'].grid(row=item["row"],
-                                        column=item["col"])
+                item['button_ctl'] = ttk.Button(self.root, text=item["title"], command=callback)
+                item['button_ctl'].grid(row=item["row"], column=item["col"])
             else:
-              print("WARNING: Skipping unknown type: '%s' for item '%s'"
-                    % (item["type"], item["title"]))
+                print("WARNING: Skipping unknown type: '%s' for item '%s'"
+                      % (item["type"], item["title"]))
         self.update_T_button()
 
     def gui_update(self):
         for item in self.GUI_data:
             if item["type"] == "text":
-                if item["name"] == "time remaining perc" or item["name"] == "ticket remaining perc":
-                    perc = max(0, self.wtime_out.get(item["name"],""))
+                if item["name"] in ("time remaining perc", "ticket remaining perc"):
+                    perc = max(0, self.wtime_out.get(item["name"], ""))
                     item["label_var"].set("%2d%%: " % perc)
-                elif item["name"] == "total time" and self.wtime_out.get("consume pause", None) is not None:
+                elif item["name"] == "total time" and self.wtime_out.get("consume pause") is not None:
                     item["label_var"].set("Consuming pause: ")
                     item["value_var"].set(self.wtime_out["consume pause"])
                 else:
@@ -237,20 +230,16 @@ class wtimeGUI:
                     item["progress_ctl"]["value"] = self.wtime_out["time remaining perc"]
                 elif item["name"] == "ticket progress":
                     item["progress_ctl"]["value"] = self.wtime_out["ticket remaining perc"]
-                else:
-                    pass
             elif item["type"] == "button":
                 pass
             else:
                 print("WARNING: Skipping unknown type: '%s' for item '%s'"
-                        % (item["type"], item["title"]))
-    
+                      % (item["type"], item["title"]))
+
     def check_time_gui(self):
-        notify_message = None        
-        # Update working time values
-        prev_out = "%s" %self.wtime_out
+        notify_message = None
+        prev_out = "%s" % self.wtime_out
         self.check_time()
-        # Check for ticket and time done
         if self.wtime_out["time to reach"] == "reached" and not self.flag_time_reached:
             print(prev_out + " -> %s" % self.wtime_out)
             notify_message = "You've DONE!!!"
@@ -260,14 +249,12 @@ class wtimeGUI:
             print(prev_out + " -> %s" % self.wtime_out)
             notify_message = "Ticket reached!!!"
             self.flag_ticket_reached = True
-        # Notify message if needed
         if notify_message is not None:
             print(notify_message)
             self.show_message_box(notify_message)
-            #self.gui_build()
-            notify_message = None        
+            notify_message = None
         self.root.after(self.check_interval, self.check_time_gui)
 
-if __name__ == "__main__":
-    gui = wtimeGUI()
 
+if __name__ == "__main__":
+    wtimeGUI()

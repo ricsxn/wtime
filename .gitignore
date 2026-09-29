@@ -13,3 +13,5 @@ _*
 .aaipass
 .clockurl
 page_after_login.html
+build
+wtime.egg-info
