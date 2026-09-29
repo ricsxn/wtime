@@ -8,7 +8,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 
-from wtime5 import wtime
+from wtime import wtime
 
 
 __author__ = "Riccardo Bruno"
