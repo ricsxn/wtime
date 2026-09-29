@@ -1,155 +1,206 @@
+#!/usr/bin/env python3
+"""
+autoclocking_data - extract today's timecard summary from the web portal
+(worked hours, past-month hours, today's row, ticket/trip counters).
+
+With 2FA enabled the script fills in username and password, then WAITS for you
+to complete the second factor in the browser (visible window) and carries on
+as soon as the timecard totals show up. The second factor is not automated.
+"""
 import argparse
+import os
 import sys
 from datetime import datetime
+
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+# =========================================================================
+# CONFIGURATION - the only place to edit to adapt the script to a different
+# INFN section or a portal layout change.
+# =========================================================================
+USER_FILE = '.aaiuser'
+PASS_FILE = '.aaipass'
+URL_FILE = '.clockurl'
+
+# Dedicated Chrome profile: keeps cookies/session between runs (if the portal
+# allows it, 2FA may be asked less often). Set to None to use a throwaway
+# profile every time.
+PROFILE_DIR = os.path.expanduser('~/.autoclocking-chrome')
+
+TWO_FA_TIMEOUT = 180       # seconds allowed to complete 2FA by hand
+LOGIN_FIELD_TIMEOUT = 5    # seconds to detect whether a login is needed (session still valid?)
+
+TOTALS_ROW_SELECTOR = 'tr.icePnlGrdRow1.infnTotaliCartellinoRow1 td'
+TOTALS_VALUE_SELECTOR = "span.iceOutTxt.infnTotaliCartellino"
+WORKED_HOURS_SUFFIX = '-0-5'
+PAST_MONTH_HOURS_SUFFIX = '-0-7'
+TABLE_ROW_SELECTOR = ("table.iceDatTbl > tbody > tr.iceDatTblRow1, "
+                      "table.iceDatTbl > tbody > tr.iceDatTblRow2")
+
+# The portal is in Italian: these are literal labels/weekday abbreviations
+# shown on the page, not code semantics.
+WEEKDAYS = ('lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom')
+TICKET_LABEL = 'Ticket'
+TRIP_LABEL = 'Trasferta'
 
 
+class AutoClockingData:
 
-
-class AutoClocking:
-
-    # Define a dictionary for the Italian weekday names
-    weekdays = {
-        0: 'lun',  # Monday
-        1: 'mar',  # Tuesday
-        2: 'mer',  # Wednesday
-        3: 'gio',  # Thursday
-        4: 'ven',  # Friday
-        5: 'sab',  # Saturday
-        6: 'dom'   # Sunday
-    }
-
-    def __init__(self, userfile, passfile, clockurl):
-        self.ok = True
-        self.username = self.read_string_file(userfile)
-        self.password = self.read_string_file(passfile)
-        self.url = self.read_string_file(clockurl)
-        if self.password is None or len(self.password) == 0 or\
-            self.username is None or len(self.username) == 0:
-            print('WARNING: No password file found',file=sys.stderr)
-            self.ok = False
+    def __init__(self, user_file=USER_FILE, pass_file=PASS_FILE, url_file=URL_FILE,
+                 profile_dir=PROFILE_DIR, timeout_2fa=TWO_FA_TIMEOUT):
+        self.username = self._read(user_file)
+        self.password = self._read(pass_file)
+        self.url = self._read(url_file)
+        self.profile_dir = profile_dir
+        self.timeout_2fa = timeout_2fa
+        self.ok = bool(self.username and self.password and self.url)
+        if not self.ok:
+            print('WARNING: missing credentials or URL', file=sys.stderr)
         now = datetime.now()
-        day_number = now.day
-        weekday_name = self.weekdays[now.weekday()]
-        self.today = f"{day_number} {weekday_name}"
+        self.today = "%d %s" % (now.day, WEEKDAYS[now.weekday()])
 
-
-    def read_string_file(self, file_path):
+    @staticmethod
+    def _read(path):
         try:
-            with open(file_path, 'r') as file:
-                content = file.read()
-            return content
-        except FileNotFoundError:
-            print(f"The file {file_path} does not exist.")
-            return None
-        except IOError:
-            print(f"Error reading the file {file_path}.")
+            with open(path, 'r') as f:
+                return f.read().strip()   # strip: no trailing newline in user/pass/url
+        except (FileNotFoundError, IOError) as e:
+            print("Cannot read %s: %s" % (path, e), file=sys.stderr)
             return None
 
-    def get_clocking(self, **kwargs):
-        wait = kwargs.get('wait', False)
-        if self.ok is False:
-            print('ERROR: Autoclocking not well configured',file=sys.stderr)
-            sys.exit(1)
-        # Open the browser and go to the login page
-        driver = webdriver.Chrome()
-        driver.get(self.url)
+    # ---------- browser ---------------------------------------------------
 
-        # Find elements by their IDs and send credentials
-        login_field = driver.find_element(By.ID, 'user')  # Replace 'login_id' with the actual ID
-        password_field = driver.find_element(By.ID, 'PASS')  # Replace 'password_id' with the actual ID
-        login_button = driver.find_element(By.ID, 'login-btn')  # Replace 'button_id' with the actual ID
+    def _new_driver(self):
+        opts = Options()
+        if self.profile_dir:
+            opts.add_argument('--user-data-dir=%s' % self.profile_dir)
+        return webdriver.Chrome(options=opts)
 
-        # Send the login credentials
-        login_field.send_keys(self.username)  # Enter your username
-        password_field.send_keys(self.password)  # Enter your password
-        # Click the login button
-        login_button.click()
+    def _login(self, driver):
+        try:
+            login_field = WebDriverWait(driver, LOGIN_FIELD_TIMEOUT).until(
+                EC.presence_of_element_located((By.ID, 'user')))
+        except TimeoutException:
+            return  # no login form: session is probably still active
+        login_field.send_keys(self.username)
+        driver.find_element(By.ID, 'PASS').send_keys(self.password)
+        driver.find_element(By.ID, 'login-btn').click()
 
-        # Optionally, you can wait to observe what happens (useful for debugging)
-        driver.implicitly_wait(5)  # Waits for 5 seconds
+    def _wait_for_timecard(self, driver):
+        print("Waiting for the timecard: if asked, complete 2FA in the "
+              "browser (max %d s)..." % self.timeout_2fa, file=sys.stderr)
+        try:
+            WebDriverWait(driver, self.timeout_2fa).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, TOTALS_ROW_SELECTOR)))
+        except TimeoutException:
+            raise RuntimeError("Timecard not reached within %d s (login or 2FA "
+                               "not completed?)" % self.timeout_2fa)
 
-        # Get the page source (HTML) of the page after successful login
-        html_content = driver.page_source
+    # ---------- extraction ------------------------------------------------
 
-        # You can also save the HTML to a file if needed
-        with open('page_after_login.html', 'w', encoding='utf-8') as f:
-            f.write(html_content)
+    @staticmethod
+    def _totals_value(driver, prefix, suffix):
+        cell = driver.find_element(By.ID, prefix + suffix)
+        return cell.find_element(By.CSS_SELECTOR, TOTALS_VALUE_SELECTOR).text
 
-        # Select the first <td> element that contains the relevant class
-        tds = driver.find_elements(By.CSS_SELECTOR,'tr.icePnlGrdRow1.infnTotaliCartellinoRow1 td')
+    def get_clocking(self, wait=False, dump=False, verbose=False):
+        """Return a dict summarizing today's timecard: worked_hours,
+        past_month_hours, today_row, today_extra_rows, ticket_count,
+        trip_count."""
+        if not self.ok:
+            raise RuntimeError("Autoclocking is not configured correctly")
 
-        # Extract the ID to get the prefix (e.g., j_id102:j_id103)
-        id_value = tds[0].get_attribute("id")
-        prefix = id_value.split('-')[0]  # Get the prefix part before the '-'
-        print(f"Prefix extracted: {prefix}")
+        driver = self._new_driver()
+        try:
+            driver.get(self.url)
+            self._login(driver)
+            self._wait_for_timecard(driver)
 
-        workded_hours = None
-        worked_hours_td = driver.find_element(By.ID, prefix+'-0-5')
-        worked_hours = worked_hours_td.find_element(By.CSS_SELECTOR, "span.iceOutTxt.infnTotaliCartellino").text
-        print(f'Worked hours: {worked_hours}') 
+            if dump:
+                with open('page_after_login.html', 'w', encoding='utf-8') as f:
+                    f.write(driver.page_source)
 
-        past_month_hours = None
-        past_month_hours_td = driver.find_element(By.ID, prefix+'-0-7')
-        past_month_hours = past_month_hours_td.find_element(By.CSS_SELECTOR, "span.iceOutTxt.infnTotaliCartellino").text
-        print(f'Past month hours: {past_month_hours}')
+            totals_cells = driver.find_elements(By.CSS_SELECTOR, TOTALS_ROW_SELECTOR)
+            if not totals_cells:
+                raise RuntimeError("Totals row not found on the timecard page")
+            prefix = totals_cells[0].get_attribute("id").split('-')[0]
 
-        # Locate the div with class 'cartellino'
-        div_element = driver.find_element("id", "cartellino")
+            worked_hours = self._totals_value(driver, prefix, WORKED_HOURS_SUFFIX)
+            past_month_hours = self._totals_value(driver, prefix, PAST_MONTH_HOURS_SUFFIX)
 
-        # Locate the table rows
-        #rows = driver.find_elements(By.CSS_SELECTOR, "table.iceDatTbl > tbody > tr")
-        rows = driver.find_elements(By.CSS_SELECTOR, "table.iceDatTbl > tbody > tr.iceDatTblRow1, table.iceDatTbl > tbody > tr.iceDatTblRow2")
+            rows = driver.find_elements(By.CSS_SELECTOR, TABLE_ROW_SELECTOR)
 
+            ticket_count = 0
+            trip_count = 0
+            today_row = None        # today's header row (date, clockings, ...)
+            today_extra_rows = []   # continuation rows under today's header, if any
+            in_today_block = False
 
-        # Loop through each row and get the inner text of the cells
-        today_flag=''
-        today_row1 = None
-        today_row2 = None
-        ticket_count = 0
-        trip_count = 0
-
-        for row in rows:
-            #print(f'[{row.get_attribute('innerHTML')}]')
-            row_html = row.text.strip()
-            cells = row_html.split('\n')  # Gets all text inside the row and splits it by spaces
-            if any(x in row_html for x in ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom']):
-                if 'Ticket' in cells:
-                    ticket_count += 1
-                if 'Trasferta' in cells:
-                    trip_count += 1
-                if self.today == cells[0]:
-                    today_flag = '*'
-                    today_row1 = cells
+            for row in rows:
+                cells = row.text.strip().split('\n')
+                is_day_header = bool(cells and cells[0]) and any(day in cells[0] for day in WEEKDAYS)
+                if is_day_header:
+                    if TICKET_LABEL in cells:
+                        ticket_count += 1
+                    if TRIP_LABEL in cells:
+                        trip_count += 1
+                    in_today_block = (cells[0] == self.today)
+                    if in_today_block:
+                        today_row = cells
+                    if verbose:
+                        print(('*' if in_today_block else '') + str(cells))
                 else:
-                    today_flag = '' 
-                print(f'{today_flag}{cells}')
-                continue
-            else:
-                print(f'{today_flag}\t{cells}')
-            if today_flag == '*':
-                today_row2 = cells
+                    if in_today_block:
+                        today_extra_rows.append(cells)
+                    if verbose:
+                        print(('*' if in_today_block else '') + '\t' + str(cells))
 
-        # Today values
-        print(f'Today row1:{today_row1}, Today row2:{today_row2}')
-        print(f'Tickets: {ticket_count}')
-        print(f'Trip days: {trip_count}')
+            if wait:
+                input("Press <ENTER> to conclude ...")
 
-        if wait is True:
-            input("Press <ENTER> to conclude ...")
-        driver.quit()
-
-
+            return {
+                'worked_hours': worked_hours,
+                'past_month_hours': past_month_hours,
+                'today_row': today_row,
+                'today_extra_rows': today_extra_rows,
+                'ticket_count': ticket_count,
+                'trip_count': trip_count,
+            }
+        finally:
+            driver.quit()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Script con opzione di attesa.")
-    parser.add_argument('-w', '--wait', action='store_true', help="Attende che l'utente prema Enter prima di terminare.")
+    parser = argparse.ArgumentParser(description="Extract today's timecard summary from the portal.")
+    parser.add_argument('-w', '--wait', action='store_true',
+                        help="Wait for ENTER before closing the browser.")
+    parser.add_argument('-t', '--timeout', type=int, default=TWO_FA_TIMEOUT,
+                        help="Seconds to complete 2FA (default %d)." % TWO_FA_TIMEOUT)
+    parser.add_argument('--dump', action='store_true',
+                        help="Save the page after login to page_after_login.html.")
+    parser.add_argument('--no-profile', action='store_true',
+                        help="Use a throwaway Chrome profile instead of the dedicated one.")
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help="Print every parsed table row while scanning.")
     args = parser.parse_args()
 
-    auto_clocking = AutoClocking('.aaiuser', '.aaipass', '.clockurl')
-    auto_clocking.get_clocking(wait=args.wait)
+    ac = AutoClockingData(profile_dir=None if args.no_profile else PROFILE_DIR,
+                          timeout_2fa=args.timeout)
+    try:
+        data = ac.get_clocking(wait=args.wait, dump=args.dump, verbose=args.verbose)
+    except RuntimeError as e:
+        print("ERROR: %s" % e, file=sys.stderr)
+        sys.exit(1)
 
+    print("Worked hours     : %s" % data['worked_hours'])
+    print("Past month hours : %s" % data['past_month_hours'])
+    print("Today row        : %s" % data['today_row'])
+    if data['today_extra_rows']:
+        print("Today extra rows : %s" % data['today_extra_rows'])
+    print("Tickets          : %d" % data['ticket_count'])
+    print("Trip days        : %d" % data['trip_count'])
