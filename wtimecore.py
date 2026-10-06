@@ -149,16 +149,26 @@ class wtime:
         worked = dtm + dta
         due = dtw if pause_clocked else (dtw + dtp)
 
+        # Absolute clock time the threshold is/was reached: start + the real
+        # break offset + the net duration due. Valid whether that moment is
+        # in the past (already reached) or still ahead, so it's always shown,
+        # not just while still counting down.
+        due_at = dt1 + (dt3 - dt2) + due
+        out["time remaining at"] = fmt_delta(due_at)
+        # Like "ticket time" below: the fixed threshold value, always shown -
+        # separate from "time remaining", which carries the status (a
+        # countdown, or "reached"). Keeping both in "reached" duplicated the
+        # same information under two labels.
+        out["time to reach"] = fmt_delta(due)
+
         if due > worked:
-            out["time to reach"] = fmt_delta(dtw)
             out["time remaining"] = fmt_delta(due - worked)
-            out["time remaining at"] = fmt_delta(dt1 + (dt3 - dt2) + due)
             due_sec = due.total_seconds()
             remaining_sec = (due - worked).total_seconds()
             out["time remaining perc"] = 100 * (due_sec - remaining_sec) / due_sec
         else:
             out["overtime"] = fmt_delta(worked - due)
-            out["time to reach"] = "reached"
+            out["time remaining"] = "reached"
             out["time remaining perc"] = 100
 
         # meal ticket: a clocked pause (did>0) must be >= the minimum;
@@ -167,17 +177,25 @@ class wtime:
         effective_pause = did if pause_clocked else DEFAULT_PAUSE
         pause_valid = effective_pause >= TICKET_MIN_PAUSE
 
+        # Like `due` above: when the pause isn't clocked, `worked` is the raw
+        # elapsed time since T1 (gross), so the threshold must include the
+        # virtual pause too (TICKET_MIN_WORK + DEFAULT_PAUSE), not just the
+        # net 6h. Previously this was left flat at TICKET_MIN_WORK in both
+        # cases, granting the ticket up to 30' too early when unclocked.
+        ticket_due = TICKET_MIN_WORK if pause_clocked else (TICKET_MIN_WORK + DEFAULT_PAUSE)
+
         if not pause_valid:
             out["ticket remaining"] = "pause too short (min %s)" % fmt_delta(TICKET_MIN_PAUSE)
             out["ticket remaining perc"] = 0
-        elif worked >= TICKET_MIN_WORK:
-            out["ticket remaining"] = "reached"
-            out["ticket remaining perc"] = 100
         else:
-            out["ticket remaining"] = fmt_delta(TICKET_MIN_WORK - worked)
-            out["ticket remaining at"] = fmt_delta(dtn + TICKET_MIN_WORK - worked)
-            out["ticket remaining perc"] = 100 * worked.total_seconds() / TICKET_MIN_WORK.total_seconds()
-        out["ticket time"] = fmt_delta(TICKET_MIN_WORK)
+            out["ticket remaining at"] = fmt_delta(dt1 + (dt3 - dt2) + ticket_due)
+            if worked >= ticket_due:
+                out["ticket remaining"] = "reached"
+                out["ticket remaining perc"] = 100
+            else:
+                out["ticket remaining"] = fmt_delta(ticket_due - worked)
+                out["ticket remaining perc"] = 100 * worked.total_seconds() / ticket_due.total_seconds()
+        out["ticket time"] = fmt_delta(ticket_due)
 
         return out
 
@@ -195,21 +213,23 @@ class wtime:
         print("T3             : %s" % out["t3"])
         print("T4             : %s T4-T3: %s" % (out["t4"], out["t4t3"]))
         print("Pause time     : %s" % out["pause time"])
+        overtime = out.get("overtime")
+        if overtime is not None:
+            print("Work time      : reached")
+        else:
+            print("Work time      : %s" % out["time remaining"])
+        print("            at : %s" % out["time remaining at"])
+
         consuming = out.get("consume pause")
         if consuming is None:
             print("Total time     : %s" % out["total time"])
         else:
             print("Consume pause  : %s to go" % consuming)
-        overtime = out.get("overtime")
         if overtime is not None:
             print("Overtime       : %s" % overtime)
-        else:
-            print("Time to reach  : %s" % out["time to reach"])
-            print("Time remaining : %s" % out["time remaining"])
-            print("            at : %s" % out["time remaining at"])
-        if out["ticket remaining"] != "reached":
-            print("Ticket remain  : %s" % out["ticket remaining"])
-            if "ticket remaining at" in out:
-                print("            at : %s" % out["ticket remaining at"])
+
+        print("Ticket remain  : %s" % out["ticket remaining"])
+        if "ticket remaining at" in out:
+            print("            at : %s" % out["ticket remaining at"])
         print("Ticket time    : %s" % out["ticket time"])
         return 0

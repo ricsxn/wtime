@@ -34,7 +34,11 @@ class wtimeGUI:
 
     root = None
 
+    # Rows are grouped by topic: clockings, then the whole time block, then
+    # the whole ticket block, then the buttons - instead of interleaving
+    # time and ticket rows.
     GUI_data = (
+        # clockings
         {"type": "text", "name": "t1", "title": "T1", "row": 0, "col": 0},
         {"type": "text", "name": "t2", "title": "T2", "row": 1, "col": 0},
         {"type": "text", "name": "t2t1", "title": "T2 - T1", "row": 1, "col": 2},
@@ -42,18 +46,21 @@ class wtimeGUI:
         {"type": "text", "name": "t4", "title": "T4", "row": 3, "col": 0},
         {"type": "text", "name": "t4t3", "title": "T4 - T3", "row": 3, "col": 2},
         {"type": "text", "name": "pause time", "title": "Pause Time", "row": 4, "col": 0},
-        {"type": "text", "name": "total time", "title": "Total Time", "row": 5, "col": 0},
-        {"type": "text", "name": "overtime", "title": "Over Time", "row": 5, "col": 2},
-        {"type": "text", "name": "time to reach", "title": "Time to reach", "row": 6, "col": 0},
-        {"type": "text", "name": "ticket remaining", "title": "Ticket remain", "row": 7, "col": 0},
-        {"type": "text", "name": "ticket remaining at", "title": "at", "row": 8, "col": 0},
-        {"type": "text", "name": "ticket time", "title": "TicketTime", "row": 9, "col": 0},
-        {"type": "text", "name": "ticket remaining perc", "title": "%", "row": 8, "col": 2},
-        {"type": "progress", "name": "ticket progress", "title": "Ticket progress", "row": 8, "col": 3},
+        # ticket block
+        {"type": "text", "name": "ticket remaining", "title": "Ticket remain", "row": 5, "col": 0},
+        {"type": "text", "name": "ticket remaining at", "title": "at", "row": 6, "col": 0},
+        {"type": "text", "name": "ticket remaining perc", "title": "%", "row": 6, "col": 2},
+        {"type": "progress", "name": "ticket progress", "title": "Ticket progress", "row": 6, "col": 3},
+        {"type": "text", "name": "ticket time", "title": "TicketTime", "row": 7, "col": 0},
+        # time block
+        {"type": "text", "name": "total time", "title": "Total Time", "row": 8, "col": 0},
+        {"type": "text", "name": "overtime", "title": "Over Time", "row": 8, "col": 2},
+        {"type": "text", "name": "time to reach", "title": "Time to reach", "row": 9, "col": 0},
         {"type": "text", "name": "time remaining", "title": "Time remain", "row": 10, "col": 0},
         {"type": "text", "name": "time remaining at", "title": "at", "row": 11, "col": 0},
         {"type": "text", "name": "time remaining perc", "title": "%", "row": 11, "col": 2},
         {"type": "progress", "name": "time progress", "title": "Time progress", "row": 11, "col": 3},
+        # buttons
         {"type": "button", "name": "Tx", "title": "T2", "row": 12, "col": 0},
         {"type": "button", "name": "Update", "title": "Update", "row": 12, "col": 1},
         {"type": "button", "name": "Exit", "title": "Exit", "row": 12, "col": 3},
@@ -162,12 +169,14 @@ class wtimeGUI:
         for item in self.GUI_data:
             if item["type"] == "text":
                 if item["name"] in ("ticket remaining", "ticket remaining at",
-                                    "time remaining", "time remaining at", "overtime"):
+                                    "time to reach", "time remaining",
+                                    "time remaining at", "overtime"):
                     lblFONT_val_style = ("bold",)
                 else:
                     lblFONT_val_style = ()
                 if item["name"] in ("ticket remaining", "ticket remaining perc",
-                                    "time remaining", "time remaining perc", "overtime"):
+                                    "time to reach", "time remaining",
+                                    "time remaining perc", "overtime"):
                     lblFONT_lbl_style = ("bold",)
                 else:
                     lblFONT_lbl_style = ()
@@ -240,7 +249,7 @@ class wtimeGUI:
         notify_message = None
         prev_out = "%s" % self.wtime_out
         self.check_time()
-        if self.wtime_out["time to reach"] == "reached" and not self.flag_time_reached:
+        if "overtime" in self.wtime_out and not self.flag_time_reached:
             print(prev_out + " -> %s" % self.wtime_out)
             notify_message = "You've DONE!!!"
             self.flag_time_reached = True
