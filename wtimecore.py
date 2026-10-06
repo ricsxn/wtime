@@ -58,6 +58,28 @@ def fmt_delta(delay: dt.timedelta) -> str:
     return "%s%02d:%02d:%02d" % (sign, h, m, s)
 
 
+def parse_duration(value):
+    """Parse 'H:M[:S]' as a plain duration (e.g. hours already worked), not
+    a time of day - unlike wtime.get_datetime, this is not anchored to
+    today's date."""
+    h, m, s = wtime.getTsHMS(value)
+    return dt.timedelta(hours=h, minutes=m, seconds=s)
+
+
+def offsite_remaining(t1, t2, work_duration=WORK_DURATION):
+    """Plain `work_duration - (T2 - T1)`, for a day where only the morning is
+    badge-clocked and the rest is off-site work (lavoro fuori sede, levels
+    I-III): no pause or meal-ticket rule applies here, just the leftover time
+    against the daily duration. Returns a timedelta, negative if the morning
+    alone already exceeds work_duration."""
+    t1_dt = wtime.get_datetime(t1)
+    t2_dt = wtime.get_datetime(t2)
+    if t1_dt is None or t2_dt is None:
+        raise ValueError("both T1 and T2 are required")
+    morning = t2_dt - t1_dt
+    return work_duration - morning
+
+
 class wtime:
     """All attributes are per-instance (no shared class-level state)."""
 

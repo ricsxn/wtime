@@ -25,6 +25,8 @@ platforms it needs a separate system package — e.g. on macOS with Homebrew:
 ```
 wtime T1 [T2 [T3 [T4]]]        print a report for the given clockings
 wtime T1 [T2 [T3 [T4]]] -g     same, opening the Tkinter GUI instead
+wtime T1 T2 -o                 morning-only: WORK_DURATION - (T2-T1),
+                               for a day finished off-site (livelli I-III)
 wtime -a                       fetch today's clockings from the portal
 wtime -d                       fetch today's timecard summary from the portal
 ```
@@ -43,7 +45,6 @@ wtime 8:00 13:00 13:30 16:30      full day, 30' break clocked
 wtime 8:00                        just started, report so far
 wtime 8:00 -c 15:00                simulate a different current time
 wtime 8:00 -g                     same, in the GUI
-TS=$(wtime -a) && wtime $TS -g    use a single line with current clocking
 ```
 
 Other options:
@@ -52,6 +53,7 @@ Other options:
 |-------------------|-------------------------------------------------------|
 | `-c, --current-time` | simulate a different current time                  |
 | `-g, --gui`        | open the Tkinter GUI instead of printing a report     |
+| `-o, --offsite`    | just `WORK_DURATION - (T2-T1)`: morning badge-clocked, rest done off-site |
 | `-a, --auto`       | fetch today's clockings from the portal (autoclocking)|
 | `-d, --data`       | fetch today's timecard summary (autoclocking_data)    |
 | `-t, --timeout`    | seconds allowed to complete 2FA by hand (`-a`/`-d`)   |
@@ -60,6 +62,25 @@ Other options:
 
 `-a`/`-d` cannot be combined with explicit times, `-g` or `-c`: they read
 today's clockings from the portal instead of from you.
+
+## Off-site days (`-o`)
+
+Some days only the morning is badge-clocked (`T1`/`T2`), with the rest of
+the day declared as off-site work (*lavoro fuori sede*, levels I-III). None
+of the pause or meal-ticket rules apply there, so `-o` skips them entirely
+and just prints `WORK_DURATION - (T2-T1)`:
+
+```
+wtime 8:00 13:00 -o      # Remaining : 02:12:00
+wtime 8:00 15:30 -o      # Overtime  : 00:18:00
+```
+
+If you already have the worked duration (e.g. from your own notes), give a
+single value instead of T1 T2 and wtime subtracts it directly:
+
+```
+wtime 3:57 -o            # Remaining : 03:15:00
+```
 
 ## Configuring the rules
 
@@ -73,7 +94,8 @@ All the section-specific numbers live in one place, at the top of
   (default 30')
 
 These follow the national research CCNL (art. 5, commi 2 and 10, for the
-meal ticket rule). Check with your section's staff
+meal ticket rule). They have not been confirmed against a Catania-specific
+local circular (none was found publicly) — check with your section's staff
 office before relying on the defaults, especially `TICKET_MIN_PAUSE`.
 
 ## Portal autoclocking (`-a` / `-d`)
@@ -113,3 +135,8 @@ setup.py             packaging (console_scripts entry point: wtime)
 (`python3 autoclocking.py`) for standalone testing; `wtimecli.py` is the
 normal way to use them through `wtime -a`/`wtime -d`.
 
+## Older versions
+
+Earlier, single-file versions of this tool (`wtime5.py`, `wtimegui4.py`,
+one-off `autoclocking*.py` scripts) are kept in the `legacy` branch and the
+`legacy-final` tag for reference; they are not maintained.
