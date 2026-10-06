@@ -6,6 +6,7 @@ Not meant to parse the command line itself: wtimecli.py builds a wtimeGUI
 instance with explicit t1..t4/current_time. Running this file directly opens
 the GUI with no clockings prefilled (only useful for a quick UI smoke test).
 """
+import datetime as dt
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
@@ -76,6 +77,12 @@ class wtimeGUI:
         self.t1, self.t2, self.t3, self.t4, self.ct = t1, t2, t3, t4, current_time
         self.wt = wtime(t1=self.t1, t2=self.t2, t3=self.t3, t4=self.t4,
                         current_time=self.ct)
+        # T1..T4 are anchored to *this* calendar day (see wtimecore.get_datetime).
+        # If the window is left open past midnight, recalculating against
+        # today's date with yesterday's clockings produces meaningless
+        # 24h+ deltas. Remember the day so we can notice and stop instead.
+        self.day = dt.date.today()
+        self.flag_day_changed = False
 
         self.root = Tk()
         self.root.title(self.winTITLE)
@@ -124,12 +131,32 @@ class wtimeGUI:
         else:
             pass
 
+    def is_same_day(self):
+        return dt.date.today() == self.day
+
+    def warn_day_changed(self):
+        if self.flag_day_changed:
+            return
+        self.flag_day_changed = True
+        self.show_message_box(
+            "A new day has started since this window was opened: the "
+            "clockings shown are from yesterday, so the figures are no "
+            "longer meaningful. Close this window and run wtime again "
+            "for today.")
+
     def check_time(self):
+        if not self.is_same_day():
+            # Day changed: stop recalculating and leave the last valid
+            # (pre-midnight) figures on screen instead of overwriting them
+            # with meaningless deltas.
+            self.warn_day_changed()
+            return
         try:
             self.wtime_out = self.wt.calc2()
         except Exception as e:
             print(e)
             self.root.destroy()
+            return
         self.gui_update()
 
     def btnTx(self, *args):
@@ -246,6 +273,11 @@ class wtimeGUI:
                       % (item["type"], item["title"]))
 
     def check_time_gui(self):
+        if not self.is_same_day():
+            # Warn once and stop the periodic loop entirely: nothing more
+            # to recompute or notify about once the day has rolled over.
+            self.warn_day_changed()
+            return
         notify_message = None
         prev_out = "%s" % self.wtime_out
         self.check_time()
