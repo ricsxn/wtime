@@ -4,6 +4,7 @@ wtimecli - single entry point for the wtime command.
 
   wtime T1 [T2 [T3 [T4]]]        print a report for the given clockings
   wtime T1 [T2 [T3 [T4]]] -g     same, opening the Tkinter GUI instead
+  wtime T1 [T2 [T3 [T4]]] -T     same, opening the curses terminal UI instead
   wtime T1 T2 -o                 morning-only: WORK_DURATION - (T2-T1),
                                  for a day finished off-site (livelli I-III)
   wtime HH:MM -o                 same, but you already have the worked
@@ -27,6 +28,9 @@ def build_parser():
                         help="simulate a different current time")
     parser.add_argument('-g', '--gui', action='store_true',
                         help="open the Tkinter GUI instead of printing a report")
+    parser.add_argument('-T', '--tui', action='store_true',
+                        help="open the curses terminal UI instead of printing "
+                             "a report (no Tkinter/Tk needed)")
     parser.add_argument('-o', '--offsite', action='store_true',
                         help="WORK_DURATION minus what's already worked, for "
                              "a day finished off-site (lavoro fuori sede, "
@@ -129,6 +133,10 @@ def run_report_or_gui(args):
             raise
         wtimeGUI(t1=t1, t2=t2, t3=t3, t4=t4, current_time=args.current_time)
         return 0
+    if args.tui:
+        from wtimetui import main as tui_main
+        tui_main(t1=t1, t2=t2, t3=t3, t4=t4, current_time=args.current_time)
+        return 0
     wt = wtime(t1=t1, t2=t2, t3=t3, t4=t4, current_time=args.current_time)
     out = wt.calc2()
     return wt.printout(out)
@@ -140,11 +148,14 @@ def main(argv=None):
 
     if args.auto and args.data:
         parser.error("-a and -d are mutually exclusive")
-    if (args.auto or args.data) and (args.times or args.gui or args.current_time or args.offsite):
+    if (args.auto or args.data) and (args.times or args.gui or args.tui
+                                     or args.current_time or args.offsite):
         parser.error("-a/-d fetch clockings from the portal: they can't be "
-                     "combined with explicit times, -g, -c or -o")
-    if args.offsite and args.gui:
-        parser.error("-o and -g are mutually exclusive")
+                     "combined with explicit times, -g, -T, -c or -o")
+    if args.gui and args.tui:
+        parser.error("-g and -T are mutually exclusive")
+    if args.offsite and (args.gui or args.tui):
+        parser.error("-o can't be combined with -g or -T")
 
     if args.auto:
         return run_auto(args)

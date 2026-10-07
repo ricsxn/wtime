@@ -11,6 +11,7 @@ setup(
     py_modules=[
         "wtimecore",
         "wtimegui",
+        "wtimetui",
         "wtimecli",
         "portal_session",
         "autoclocking",

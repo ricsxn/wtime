@@ -25,6 +25,7 @@ platforms it needs a separate system package — e.g. on macOS with Homebrew:
 ```
 wtime T1 [T2 [T3 [T4]]]        print a report for the given clockings
 wtime T1 [T2 [T3 [T4]]] -g     same, opening the Tkinter GUI instead
+wtime T1 [T2 [T3 [T4]]] -T     same, opening the curses terminal UI instead
 wtime T1 T2 -o                 morning-only: WORK_DURATION - (T2-T1),
                                for a day finished off-site (livelli I-III)
 wtime -a                       fetch today's clockings from the portal
@@ -53,6 +54,7 @@ Other options:
 |-------------------|-------------------------------------------------------|
 | `-c, --current-time` | simulate a different current time                  |
 | `-g, --gui`        | open the Tkinter GUI instead of printing a report     |
+| `-T, --tui`        | open the curses terminal UI instead (no Tkinter/Tk needed) |
 | `-o, --offsite`    | just `WORK_DURATION - (T2-T1)`: morning badge-clocked, rest done off-site |
 | `-a, --auto`       | fetch today's clockings from the portal (autoclocking)|
 | `-d, --data`       | fetch today's timecard summary (autoclocking_data)    |
@@ -62,6 +64,14 @@ Other options:
 
 `-a`/`-d` cannot be combined with explicit times, `-g` or `-c`: they read
 today's clockings from the portal instead of from you.
+
+## Terminal UI (`-T`)
+
+Same clockings/ticket/time blocks as the Tkinter GUI (`-g`), drawn with
+`curses` instead - no Tk dependency, works over SSH. Keys: `t` marks the
+next clocking (T2, then T3, then T4), `u` refreshes immediately, `q` quits.
+It also refreshes on its own every 5 seconds, and freezes with a one-time
+warning if left open past midnight, same as `-g`.
 
 ## Off-site days (`-o`)
 
@@ -124,6 +134,8 @@ row and the ticket/trip counters read from the monthly table.
 wtimecore.py         working-time calculation (no CLI, no printing besides
                      printout()) — this is where the configuration lives
 wtimegui.py          Tkinter GUI, built on wtimecore
+wtimetui.py          curses terminal UI, built on wtimecore (no Tkinter/Tk
+                     needed - same blocks and day-rollover guard as the GUI)
 wtimecli.py          the wtime command: argument parsing and dispatch
 portal_session.py    shared login/2FA-wait/browser-profile logic
 autoclocking.py      -a: reads today's raw clockings from the portal
