@@ -50,7 +50,7 @@ class wtimeTUI:
     def mark_next(self):
         if not self.is_same_day():
             return
-        ts = wtime.get_ts()
+        ts = self.wt.now_ts()  # simulated time if -c was given, else real
         if self.t2 is None:
             self.t2 = ts
         elif self.t3 is None:
@@ -59,6 +59,11 @@ class wtimeTUI:
             self.t4 = ts
         else:
             return
+        if self.ct is not None:
+            # Re-anchor the simulated clock at "now": the new wtime object
+            # restarts its ticking from the value it's given, so passing the
+            # original -c would jump the clock back to where it started.
+            self.ct = ts
         self.wt = wtime(t1=self.t1, t2=self.t2, t3=self.t3, t4=self.t4,
                         current_time=self.ct)
 

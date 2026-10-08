@@ -52,7 +52,7 @@ Other options:
 
 | Flag             | Meaning                                              |
 |-------------------|-------------------------------------------------------|
-| `-c, --current-time` | simulate a different current time                  |
+| `-c, --current-time` | simulate a different current time (the simulated clock starts there and keeps ticking in `-g`/`-T`) |
 | `-g, --gui`        | open the Tkinter GUI instead of printing a report     |
 | `-T, --tui`        | open the curses terminal UI instead (no Tkinter/Tk needed) |
 | `-o, --offsite`    | just `WORK_DURATION - (T2-T1)`: morning badge-clocked, rest done off-site |

@@ -85,6 +85,10 @@ class wtime:
 
     def __init__(self, **kwargs):
         self.current_time = self.get_datetime(kwargs.get('current_time'))
+        # Real instant this object was created: when a simulated current_time
+        # is given, the simulated clock starts at that value *now* and keeps
+        # ticking from here (see now()).
+        self.sim_anchor = dt.datetime.now()
         self.t1 = self.get_datetime(kwargs.get('t1'))
         self.t2 = self.get_datetime(kwargs.get('t2'))
         self.t3 = self.get_datetime(kwargs.get('t3'))
@@ -118,6 +122,20 @@ class wtime:
         now = dt.datetime.now()
         return dt.datetime(now.year, now.month, now.day, h, m, s)
 
+    def now(self):
+        """Current time for the calculation. Without a simulated current_time
+        (-c) this is the real clock. With one, it is a simulated clock that
+        starts at that value when the object is created and then advances in
+        real time, so a long-running GUI/TUI keeps updating (e.g. overtime
+        grows) instead of staying frozen at the -c instant."""
+        if self.current_time is None:
+            return dt.datetime.now()
+        return self.current_time + (dt.datetime.now() - self.sim_anchor)
+
+    def now_ts(self):
+        """now() as an HH:MM:SS string."""
+        return self.now().strftime("%H:%M:%S")
+
     # ---------- calculation -------------------------------------------------
 
     def calc2(self):
@@ -126,7 +144,7 @@ class wtime:
             out["error"] = "You must specify at least one time stamp in HH:MM:SS format"
             return out
 
-        now = self.current_time or dt.datetime.now()
+        now = self.now()
         t2 = self.t2 or now
         t3 = self.t3 or now
         t4 = self.t4 or now
