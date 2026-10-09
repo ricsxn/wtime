@@ -50,6 +50,9 @@ def build_parser():
                         help="seconds to complete 2FA (only with -a/-d/-b)")
     parser.add_argument('--dump', action='store_true',
                         help="save the portal page to page_after_login.html (only with -a/-d/-b)")
+    parser.add_argument('--otp', metavar='CODE',
+                        help="OTP code to type in as soon as the portal asks for it "
+                             "(only with -a/-d/-b); without it you are asked in the terminal")
     parser.add_argument('--no-profile', action='store_true',
                         help="use a throwaway Chrome profile (only with -a/-d/-b)")
     return parser
@@ -60,6 +63,8 @@ def _portal_kwargs(args):
     kwargs = {'profile_dir': None if args.no_profile else PROFILE_DIR}
     if args.timeout is not None:
         kwargs['timeout_2fa'] = args.timeout
+    if args.otp:
+        kwargs['otp'] = args.otp
     return kwargs
 
 
@@ -169,6 +174,8 @@ def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    if args.otp and not (args.auto or args.data or args.browse):
+        parser.error("--otp only makes sense with -a, -d or -b")
     if sum([args.auto, args.data, args.browse]) > 1:
         parser.error("-a, -d and -b are mutually exclusive")
     if (args.auto or args.data or args.browse) and (

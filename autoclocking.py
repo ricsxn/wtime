@@ -138,12 +138,14 @@ if __name__ == "__main__":
                         help="Seconds to complete 2FA (default %d)." % TWO_FA_TIMEOUT)
     parser.add_argument('--dump', action='store_true',
                         help="Save the page after login to page_after_login.html.")
+    parser.add_argument('--otp', metavar='CODE',
+                        help="OTP code to type in as soon as the portal asks for it.")
     parser.add_argument('--no-profile', action='store_true',
                         help="Use a throwaway Chrome profile instead of the dedicated one.")
     args = parser.parse_args()
 
     ac = AutoClocking(profile_dir=None if args.no_profile else PROFILE_DIR,
-                      timeout_2fa=args.timeout)
+                      timeout_2fa=args.timeout, otp=args.otp)
     try:
         print(' '.join(ac.get_clocking(wait=args.wait, dump=args.dump)))
     except RuntimeError as e:

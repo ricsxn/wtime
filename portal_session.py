@@ -48,12 +48,15 @@ class PortalSession:
     call open_portal()/wait_for() with their own target element."""
 
     def __init__(self, user_file=USER_FILE, pass_file=PASS_FILE, url_file=URL_FILE,
-                 profile_dir=PROFILE_DIR, timeout_2fa=TWO_FA_TIMEOUT):
+                 profile_dir=PROFILE_DIR, timeout_2fa=TWO_FA_TIMEOUT, otp=None):
         self.username = self._read(user_file)
         self.password = self._read(pass_file)
         self.url = self._read(url_file)
         self.profile_dir = profile_dir
         self.timeout_2fa = timeout_2fa
+        # OTP given up front (--otp): used for the first OTP page that shows
+        # up, then dropped - a wrong code must not be sent twice.
+        self.otp = re.sub(r"\s+", "", otp) if otp else None
         self.ok = bool(self.username and self.password and self.url)
         if not self.ok:
             print('WARNING: missing credentials or URL', file=sys.stderr)
@@ -105,7 +108,11 @@ class PortalSession:
         return re.sub(r"\s+", "", code)   # authenticator apps show "123 456"
 
     def _enter_otp(self, field):
-        code = self._ask_otp()
+        if self.otp:
+            code, self.otp = self.otp, None
+            print("OTP requested: using the code given with --otp.", file=sys.stderr)
+        else:
+            code = self._ask_otp()
         if not code:
             return
         field.clear()

@@ -63,6 +63,7 @@ Other options:
 | `-b, --browse`     | log in and leave the current month's timecard open in the browser |
 | `-t, --timeout`    | seconds allowed to complete 2FA (`-a`/`-d`/`-b`)      |
 | `--dump`           | save the portal page to `page_after_login.html`       |
+| `--otp CODE`       | OTP typed in as soon as the portal asks (`-a`/`-d`/`-b`); otherwise you're asked in the terminal |
 | `--no-profile`     | use a throwaway Chrome profile instead of the saved one|
 
 `-a`/`-d`/`-b` cannot be combined with each other or with explicit times, `-G`, `-T`, `-c` or `-o`: they read
@@ -126,7 +127,13 @@ field it asks you for the code in the terminal (read it from your
 authenticator app) and types it in. The TOTP seed stays in the authenticator,
 never on this machine next to `.aaipass` - which is the point of keeping the
 two factors apart. Answer with an empty line to do the second factor yourself
-in the browser instead; after 3 wrong codes it also leaves it to you. It
+in the browser instead; after 3 wrong codes it also leaves it to you.
+You can also give the code up front, `wtime -a --otp 123456`, and it is typed
+in at once with no question asked (spaces are ignored: `--otp "123 456"`).
+Codes last about 30 seconds and the browser takes a few to reach the OTP
+page, so read the code just before pressing Enter; if it was already stale,
+the second attempt asks you in the terminal. It is also kept in your shell
+history, which is harmless for a one-time code but worth knowing. It
 waits up to 180s overall (`-t` to change). A dedicated Chrome profile
 (`~/.autoclocking-chrome`) is reused between runs so the portal may remember
 the device and ask for 2FA less often; use `--no-profile` to opt out.
