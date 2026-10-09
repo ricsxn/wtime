@@ -3,7 +3,7 @@
 wtimecli - single entry point for the wtime command.
 
   wtime T1 [T2 [T3 [T4]]]        print a report for the given clockings
-  wtime T1 [T2 [T3 [T4]]] -g     same, opening the Tkinter GUI instead
+  wtime T1 [T2 [T3 [T4]]] -G     same, opening the Tkinter GUI instead
   wtime T1 [T2 [T3 [T4]]] -T     same, opening the curses terminal UI instead
   wtime T1 T2 -o                 morning-only: WORK_DURATION - (T2-T1),
                                  for a day finished off-site (livelli I-III)
@@ -11,6 +11,8 @@ wtimecli - single entry point for the wtime command.
                                  duration: WORK_DURATION - HH:MM
   wtime -a                       fetch today's clockings from the portal
   wtime -d                       fetch today's timecard summary from the portal
+  wtime -b                       open the month's timecard in the browser and
+                                 leave it open for manual use
 """
 import argparse
 import sys
@@ -26,7 +28,7 @@ def build_parser():
                         help="clockings in H:M[:S] format: T1 [T2 [T3 [T4]]]")
     parser.add_argument('-c', '--current-time', metavar='HH:MM[:SS]',
                         help="simulate a different current time")
-    parser.add_argument('-g', '--gui', action='store_true',
+    parser.add_argument('-G', '--gui', action='store_true',
                         help="open the Tkinter GUI instead of printing a report")
     parser.add_argument('-T', '--tui', action='store_true',
                         help="open the curses terminal UI instead of printing "
@@ -41,12 +43,15 @@ def build_parser():
                         help="fetch today's clockings from the portal (autoclocking)")
     parser.add_argument('-d', '--data', action='store_true',
                         help="fetch today's timecard summary from the portal (autoclocking_data)")
+    parser.add_argument('-b', '--browse', action='store_true',
+                        help="log in and leave the current month's timecard open "
+                             "in the browser for manual use (close the window to finish)")
     parser.add_argument('-t', '--timeout', type=int,
-                        help="seconds to complete 2FA (only with -a/-d)")
+                        help="seconds to complete 2FA (only with -a/-d/-b)")
     parser.add_argument('--dump', action='store_true',
-                        help="save the portal page to page_after_login.html (only with -a/-d)")
+                        help="save the portal page to page_after_login.html (only with -a/-d/-b)")
     parser.add_argument('--no-profile', action='store_true',
-                        help="use a throwaway Chrome profile (only with -a/-d)")
+                        help="use a throwaway Chrome profile (only with -a/-d/-b)")
     return parser
 
 
@@ -88,6 +93,19 @@ def run_data(args):
     return 0
 
 
+def run_browse(args):
+    from autoclocking import AutoClocking
+    ac = AutoClocking(**_portal_kwargs(args))
+    try:
+        ac.browse(dump=args.dump)
+    except RuntimeError as e:
+        print("ERROR: %s" % e, file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        print(file=sys.stderr)  # Ctrl+C: the browser is closed, exit quietly
+    return 0
+
+
 def run_offsite(args):
     if len(args.times) == 1:
         # a single value: already-worked duration, e.g. "3:57"
@@ -124,10 +142,15 @@ def run_report_or_gui(args):
         try:
             from wtimegui import wtimeGUI
         except ModuleNotFoundError as e:
-            if e.name == '_tkinter':
+            # '_tkinter' missing: the Tk bridge is absent (e.g. Homebrew
+            # Python); 'tkinter' missing: the whole package is (e.g. Debian/
+            # Ubuntu without python3-tk). Same remedy family for both.
+            if e.name in ('_tkinter', 'tkinter'):
                 print("ERROR: Tkinter is not available in this Python "
-                     "(missing '_tkinter'). On macOS with Homebrew, install "
-                     "it with: brew install python-tk@<your-python-version>",
+                     "(missing '%s'). Install it - macOS/Homebrew: "
+                     "brew install python-tk@<your-python-version>; "
+                     "Debian/Ubuntu: sudo apt install python3-tk - or use "
+                     "the terminal UI instead: -T (no Tk needed)." % e.name,
                      file=sys.stderr)
                 return 1
             raise
@@ -146,21 +169,23 @@ def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    if args.auto and args.data:
-        parser.error("-a and -d are mutually exclusive")
-    if (args.auto or args.data) and (args.times or args.gui or args.tui
-                                     or args.current_time or args.offsite):
-        parser.error("-a/-d fetch clockings from the portal: they can't be "
-                     "combined with explicit times, -g, -T, -c or -o")
+    if sum([args.auto, args.data, args.browse]) > 1:
+        parser.error("-a, -d and -b are mutually exclusive")
+    if (args.auto or args.data or args.browse) and (
+            args.times or args.gui or args.tui or args.current_time or args.offsite):
+        parser.error("-a/-d/-b work on the portal: they can't be combined "
+                     "with explicit times, -G, -T, -c or -o")
     if args.gui and args.tui:
-        parser.error("-g and -T are mutually exclusive")
+        parser.error("-G and -T are mutually exclusive")
     if args.offsite and (args.gui or args.tui):
-        parser.error("-o can't be combined with -g or -T")
+        parser.error("-o can't be combined with -G or -T")
 
     if args.auto:
         return run_auto(args)
     if args.data:
         return run_data(args)
+    if args.browse:
+        return run_browse(args)
     if args.offsite:
         return run_offsite(args)
     return run_report_or_gui(args)

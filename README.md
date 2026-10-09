@@ -16,7 +16,7 @@ This installs a single `wtime` command (see `setup.py`). Requires Python
 its matching chromedriver (installed automatically by `selenium` >= 4.6 via
 Selenium Manager).
 
-The GUI (`-g`) uses Tkinter, part of the Python standard library. On some
+The GUI (`-G`) uses Tkinter, part of the Python standard library. On some
 platforms it needs a separate system package — e.g. on macOS with Homebrew:
 `brew install python-tk@<your-python-version>`.
 
@@ -24,12 +24,14 @@ platforms it needs a separate system package — e.g. on macOS with Homebrew:
 
 ```
 wtime T1 [T2 [T3 [T4]]]        print a report for the given clockings
-wtime T1 [T2 [T3 [T4]]] -g     same, opening the Tkinter GUI instead
+wtime T1 [T2 [T3 [T4]]] -G     same, opening the Tkinter GUI instead
 wtime T1 [T2 [T3 [T4]]] -T     same, opening the curses terminal UI instead
 wtime T1 T2 -o                 morning-only: WORK_DURATION - (T2-T1),
                                for a day finished off-site (livelli I-III)
 wtime -a                       fetch today's clockings from the portal
 wtime -d                       fetch today's timecard summary from the portal
+wtime -b                       open the month's timecard in the browser and
+                               leave it open for manual use
 ```
 
 `T1`..`T4` are times in `H:M[:S]` format:
@@ -45,33 +47,34 @@ time given with `-c`).
 wtime 8:00 13:00 13:30 16:30      full day, 30' break clocked
 wtime 8:00                        just started, report so far
 wtime 8:00 -c 15:00                simulate a different current time
-wtime 8:00 -g                     same, in the GUI
+wtime 8:00 -G                     same, in the GUI
 ```
 
 Other options:
 
 | Flag             | Meaning                                              |
 |-------------------|-------------------------------------------------------|
-| `-c, --current-time` | simulate a different current time (the simulated clock starts there and keeps ticking in `-g`/`-T`) |
-| `-g, --gui`        | open the Tkinter GUI instead of printing a report     |
+| `-c, --current-time` | simulate a different current time (the simulated clock starts there and keeps ticking in `-G`/`-T`) |
+| `-G, --gui`        | open the Tkinter GUI instead of printing a report     |
 | `-T, --tui`        | open the curses terminal UI instead (no Tkinter/Tk needed) |
 | `-o, --offsite`    | just `WORK_DURATION - (T2-T1)`: morning badge-clocked, rest done off-site |
 | `-a, --auto`       | fetch today's clockings from the portal (autoclocking)|
 | `-d, --data`       | fetch today's timecard summary (autoclocking_data)    |
-| `-t, --timeout`    | seconds allowed to complete 2FA by hand (`-a`/`-d`)   |
+| `-b, --browse`     | log in and leave the current month's timecard open in the browser |
+| `-t, --timeout`    | seconds allowed to complete 2FA (`-a`/`-d`/`-b`)      |
 | `--dump`           | save the portal page to `page_after_login.html`       |
 | `--no-profile`     | use a throwaway Chrome profile instead of the saved one|
 
-`-a`/`-d` cannot be combined with explicit times, `-g` or `-c`: they read
+`-a`/`-d`/`-b` cannot be combined with each other or with explicit times, `-G`, `-T`, `-c` or `-o`: they read
 today's clockings from the portal instead of from you.
 
 ## Terminal UI (`-T`)
 
-Same clockings/ticket/time blocks as the Tkinter GUI (`-g`), drawn with
+Same clockings/ticket/time blocks as the Tkinter GUI (`-G`), drawn with
 `curses` instead - no Tk dependency, works over SSH. Keys: `t` marks the
 next clocking (T2, then T3, then T4), `u` refreshes immediately, `q` quits.
 It also refreshes on its own every 5 seconds, and freezes with a one-time
-warning if left open past midnight, same as `-g`.
+warning if left open past midnight, same as `-G`.
 
 ## Off-site days (`-o`)
 
@@ -108,7 +111,7 @@ meal ticket rule). They have not been confirmed against a Catania-specific
 local circular (none was found publicly) — check with your section's staff
 office before relying on the defaults, especially `TICKET_MIN_PAUSE`.
 
-## Portal autoclocking (`-a` / `-d`)
+## Portal autoclocking (`-a` / `-d` / `-b`)
 
 `-a` and `-d` log into the timecard portal and read today's data instead of
 you typing it. They need three files in the working directory:
@@ -117,12 +120,23 @@ you typing it. They need three files in the working directory:
 - `.aaipass` — your portal password
 - `.clockurl` — the portal URL
 
-2FA is **not** automated: the script fills in username and password, opens
-a visible Chrome window, and waits (default 180s, `-t` to change) for you
-to complete the second factor by hand before reading the page. A dedicated
-Chrome profile (`~/.autoclocking-chrome`) is reused between runs so the
-portal may remember the device and ask for 2FA less often; use
-`--no-profile` to opt out.
+The OTP is **not generated** by wtime: the script fills in username and
+password, opens a visible Chrome window, and when the portal shows its OTP
+field it asks you for the code in the terminal (read it from your
+authenticator app) and types it in. The TOTP seed stays in the authenticator,
+never on this machine next to `.aaipass` - which is the point of keeping the
+two factors apart. Answer with an empty line to do the second factor yourself
+in the browser instead; after 3 wrong codes it also leaves it to you. It
+waits up to 180s overall (`-t` to change). A dedicated Chrome profile
+(`~/.autoclocking-chrome`) is reused between runs so the portal may remember
+the device and ask for 2FA less often; use `--no-profile` to opt out.
+
+`-b` does the same login (including the OTP step) but, instead of
+reading anything, switches to the current month and leaves the browser open
+for you to use. The command returns when you close the window; Ctrl+C in the
+terminal closes the browser too. While that window is open it holds the
+dedicated Chrome profile, so a second `wtime -a`/`-d`/`-b` started meanwhile
+will fail to launch - close the window first (or use `--no-profile`).
 
 `-a` prints today's clockings (equivalent to what you'd type as `T1 T2 T3
 T4`). `-d` prints a fuller summary: worked hours, past-month hours, today's

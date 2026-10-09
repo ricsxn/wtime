@@ -6,12 +6,13 @@ See portal_session.py for the shared login/2FA-wait logic.
 """
 import argparse
 import sys
+import time
 from datetime import datetime
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, WebDriverException
 
 from portal_session import PortalSession, PROFILE_DIR, TWO_FA_TIMEOUT
 
@@ -54,6 +55,40 @@ class AutoClocking(PortalSession):
         except TimeoutException:
             raise RuntimeError("Cannot switch to the current month "
                                "(shown: %s)" % value)
+
+    @staticmethod
+    def _wait_until_closed(driver):
+        """Block until the user closes the browser window (or it dies)."""
+        while True:
+            try:
+                if not driver.window_handles:
+                    return
+            except WebDriverException:
+                return  # browser or driver is gone
+            time.sleep(1)
+
+    def browse(self, dump=False):
+        """Log in, land on the current month's timecard and leave the browser
+        open for manual use. Returns when the window is closed; Ctrl+C in the
+        terminal closes the browser too."""
+        if not self.ok:
+            raise RuntimeError("Autoclocking is not configured correctly")
+        driver = self.new_driver()
+        try:
+            self.open_portal(driver)
+            self.wait_for(driver, (By.ID, PERIOD_INPUT_ID), "the timecard")
+            if dump:
+                with open('page_after_login.html', 'w', encoding='utf-8') as f:
+                    f.write(driver.page_source)
+            self._ensure_current_month(driver)
+            print("Timecard open in the browser. Close the window (or press "
+                  "Ctrl+C here) when done.", file=sys.stderr)
+            self._wait_until_closed(driver)
+        finally:
+            try:
+                driver.quit()
+            except WebDriverException:
+                pass  # already closed by the user
 
     def get_clocking(self, wait=False, dump=False):
         """Return today's clockings as a list of strings, e.g. ['08:01', ...]."""
