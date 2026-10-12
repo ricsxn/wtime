@@ -10,6 +10,7 @@ wtimecli - single entry point for the wtime command.
   wtime HH:MM -o                 same, but you already have the worked
                                  duration: WORK_DURATION - HH:MM
   wtime -a                       fetch today's clockings from the portal
+  wtime -a -T | -a -G            same, then open the terminal UI / GUI with them
   wtime -d                       fetch today's timecard summary from the portal
   wtime -b                       open the month's timecard in the browser and
                                  leave it open for manual use
@@ -29,7 +30,8 @@ def build_parser():
     parser.add_argument('-c', '--current-time', metavar='HH:MM[:SS]',
                         help="simulate a different current time")
     parser.add_argument('-G', '--gui', action='store_true',
-                        help="open the Tkinter GUI instead of printing a report")
+                        help="open the Tkinter GUI instead of printing a report "
+                             "(with -a: on the clockings read from the portal)")
     parser.add_argument('-T', '--tui', action='store_true',
                         help="open the curses terminal UI instead of printing "
                              "a report (no Tkinter/Tk needed)")
@@ -78,6 +80,25 @@ def run_auto(args):
         return 1
     print(' '.join(times))
     return 0
+
+
+def run_auto_ui(args):
+    """-a with -T/-G: read today's clockings from the portal, then open the
+    UI with them as if they had been typed (T3/T4 can then be marked live)."""
+    from autoclocking import AutoClocking
+    ac = AutoClocking(**_portal_kwargs(args))
+    try:
+        times = ac.get_clocking(dump=args.dump)
+    except RuntimeError as e:
+        print("ERROR: %s" % e, file=sys.stderr)
+        return 1
+    if not times:
+        print("ERROR: no clockings found on the portal for today",
+              file=sys.stderr)
+        return 1
+    print("Clockings from the portal: %s" % ' '.join(times), file=sys.stderr)
+    args.times = times[:4]
+    return run_report_or_gui(args)
 
 
 def run_data(args):
@@ -143,6 +164,13 @@ def run_report_or_gui(args):
     if not t1:
         print("ERROR: at least T1 is required", file=sys.stderr)
         return 1
+    for value in (t1, t2, t3, t4, args.current_time):
+        if value is not None:
+            try:
+                wtime.getTsHMS(value)
+            except ValueError as e:
+                print("ERROR: %s" % e, file=sys.stderr)
+                return 1
     if args.gui:
         try:
             from wtimegui import wtimeGUI
@@ -178,15 +206,22 @@ def main(argv=None):
         parser.error("--otp only makes sense with -a, -d or -b")
     if sum([args.auto, args.data, args.browse]) > 1:
         parser.error("-a, -d and -b are mutually exclusive")
-    if (args.auto or args.data or args.browse) and (
-            args.times or args.gui or args.tui or args.current_time or args.offsite):
-        parser.error("-a/-d/-b work on the portal: they can't be combined "
-                     "with explicit times, -G, -T, -c or -o")
     if args.gui and args.tui:
         parser.error("-G and -T are mutually exclusive")
+    if args.auto or args.data or args.browse:
+        if args.times or args.offsite:
+            parser.error("-a/-d/-b work on the portal: they can't be combined "
+                         "with explicit times or -o")
+        if (args.gui or args.tui) and not args.auto:
+            parser.error("-G/-T can follow -a (which reads today's clockings) "
+                         "but not -d or -b")
+        if args.current_time and not (args.auto and (args.gui or args.tui)):
+            parser.error("-c can only be used with -a together with -G or -T")
     if args.offsite and (args.gui or args.tui):
         parser.error("-o can't be combined with -G or -T")
 
+    if args.auto and (args.gui or args.tui):
+        return run_auto_ui(args)
     if args.auto:
         return run_auto(args)
     if args.data:

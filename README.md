@@ -29,6 +29,7 @@ wtime T1 [T2 [T3 [T4]]] -T     same, opening the curses terminal UI instead
 wtime T1 T2 -o                 morning-only: WORK_DURATION - (T2-T1),
                                for a day finished off-site (livelli I-III)
 wtime -a                       fetch today's clockings from the portal
+wtime -a -T | -a -G            same, then open the terminal UI / GUI with them
 wtime -d                       fetch today's timecard summary from the portal
 wtime -b                       open the month's timecard in the browser and
                                leave it open for manual use
@@ -66,8 +67,10 @@ Other options:
 | `--otp CODE`       | OTP typed in as soon as the portal asks (`-a`/`-d`/`-b`); otherwise you're asked in the terminal |
 | `--no-profile`     | use a throwaway Chrome profile instead of the saved one|
 
-`-a`/`-d`/`-b` cannot be combined with each other or with explicit times, `-G`, `-T`, `-c` or `-o`: they read
-today's clockings from the portal instead of from you.
+`-a`/`-d`/`-b` work on the portal instead of on times you type, so they cannot
+be combined with each other, with explicit times, or with `-o`. The one
+combination that is allowed is `-a` with `-G` or `-T` (and then also `-c`): see
+below. `-d` and `-b` can't open a UI, since they don't read the clockings.
 
 ## Terminal UI (`-T`)
 
@@ -137,6 +140,13 @@ history, which is harmless for a one-time code but worth knowing. It
 waits up to 180s overall (`-t` to change). A dedicated Chrome profile
 (`~/.autoclocking-chrome`) is reused between runs so the portal may remember
 the device and ask for 2FA less often; use `--no-profile` to opt out.
+
+`-a -T` (or `-a -G`) reads today's clockings and then opens the terminal UI
+(or the GUI) already filled with them, so you can carry on from there: if the
+portal only has T1 and T2 so far, T3 and T4 are marked live with `t`/the T
+button. The browser is closed before the UI opens. If the portal has no
+clockings for today, or one can't be read as a time, it stops with an error
+instead of opening an empty UI.
 
 `-b` does the same login (including the OTP step) but, instead of
 reading anything, switches to the current month and leaves the browser open
