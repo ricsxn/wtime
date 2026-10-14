@@ -2,9 +2,9 @@
 """
 wtimegui - Tkinter GUI on top of wtimecore.wtime.
 
-Not meant to parse the command line itself: wtimecli.py builds a wtimeGUI
-instance with explicit t1..t4/current_time. Running this file directly opens
-the GUI with no clockings prefilled (only useful for a quick UI smoke test).
+Normally started by the wtime command (-G). It is also what `wtime -G` runs in
+a separate process (python -m wtimegui T1 [T2 [T3 [T4]]] [-c HH:MM]) so that
+the terminal prompt comes back while the window stays open.
 """
 import datetime as dt
 from tkinter import *
@@ -303,4 +303,10 @@ class wtimeGUI:
 
 
 if __name__ == "__main__":
-    wtimeGUI()
+    import argparse
+    parser = argparse.ArgumentParser(description="wtime GUI (normally started by wtime -G).")
+    parser.add_argument('times', nargs='*', metavar='Tn', help="T1 [T2 [T3 [T4]]]")
+    parser.add_argument('-c', '--current-time', metavar='HH:MM[:SS]')
+    args = parser.parse_args()
+    t1, t2, t3, t4 = (args.times + [None, None, None, None])[:4]
+    wtimeGUI(t1=t1, t2=t2, t3=t3, t4=t4, current_time=args.current_time)

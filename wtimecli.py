@@ -3,7 +3,8 @@
 wtimecli - single entry point for the wtime command.
 
   wtime T1 [T2 [T3 [T4]]]        print a report for the given clockings
-  wtime T1 [T2 [T3 [T4]]] -G     same, opening the Tkinter GUI instead
+  wtime T1 [T2 [T3 [T4]]] -G     same, opening the Tkinter GUI instead (detached:
+                                 the prompt comes back; -f keeps it attached)
   wtime T1 [T2 [T3 [T4]]] -T     same, opening the curses terminal UI instead
   wtime T1 T2 -o                 morning-only: WORK_DURATION - (T2-T1),
                                  for a day finished off-site (livelli I-III)
@@ -16,7 +17,10 @@ wtimecli - single entry point for the wtime command.
                                  leave it open for manual use
 """
 import argparse
+import subprocess
 import sys
+import tempfile
+import time
 
 from wtimecore import wtime, offsite_remaining, parse_duration, fmt_delta, WORK_DURATION
 
@@ -32,6 +36,9 @@ def build_parser():
     parser.add_argument('-G', '--gui', action='store_true',
                         help="open the Tkinter GUI instead of printing a report "
                              "(with -a: on the clockings read from the portal)")
+    parser.add_argument('-f', '--foreground', action='store_true',
+                        help="with -G: keep the GUI attached to the terminal "
+                             "instead of detaching it and returning the prompt")
     parser.add_argument('-T', '--tui', action='store_true',
                         help="open the curses terminal UI instead of printing "
                              "a report (no Tkinter/Tk needed)")
@@ -159,6 +166,37 @@ def run_offsite(args):
     return 0
 
 
+GUI_STARTUP_GRACE = 1.0   # seconds to watch a detached GUI for an immediate crash
+
+
+def launch_gui_detached(t1, t2, t3, t4, current_time):
+    """Start the GUI in its own process and session (so it survives the
+    terminal and the prompt comes back at once). A fresh interpreter is used
+    rather than fork(): forking after Tk is loaded is unsafe on macOS. Its
+    output is discarded, so it is watched for a moment: a crash right at
+    startup is reported here instead of silently vanishing."""
+    cmd = [sys.executable, "-m", "wtimegui"]
+    cmd += [t for t in (t1, t2, t3, t4) if t is not None]
+    if current_time:
+        cmd += ["-c", current_time]
+    with tempfile.TemporaryFile() as err:
+        proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL,
+                                stdout=subprocess.DEVNULL, stderr=err,
+                                start_new_session=True)
+        deadline = time.monotonic() + GUI_STARTUP_GRACE
+        while proc.poll() is None and time.monotonic() < deadline:
+            time.sleep(0.05)
+        if proc.poll() not in (None, 0):
+            err.seek(0)
+            detail = err.read().decode(errors="replace").strip()
+            print("ERROR: the GUI exited right after starting (code %d); "
+                  "run with -f to see its output.%s"
+                  % (proc.returncode, ("\n" + detail) if detail else ""),
+                  file=sys.stderr)
+            return 1
+    return 0
+
+
 def run_report_or_gui(args):
     t1, t2, t3, t4 = (args.times + [None, None, None, None])[:4]
     if not t1:
@@ -187,8 +225,10 @@ def run_report_or_gui(args):
                      file=sys.stderr)
                 return 1
             raise
-        wtimeGUI(t1=t1, t2=t2, t3=t3, t4=t4, current_time=args.current_time)
-        return 0
+        if args.foreground:
+            wtimeGUI(t1=t1, t2=t2, t3=t3, t4=t4, current_time=args.current_time)
+            return 0
+        return launch_gui_detached(t1, t2, t3, t4, args.current_time)
     if args.tui:
         from wtimetui import main as tui_main
         tui_main(t1=t1, t2=t2, t3=t3, t4=t4, current_time=args.current_time)
@@ -208,6 +248,8 @@ def main(argv=None):
         parser.error("-a, -d and -b are mutually exclusive")
     if args.gui and args.tui:
         parser.error("-G and -T are mutually exclusive")
+    if args.foreground and not args.gui:
+        parser.error("-f/--foreground only makes sense with -G")
     if args.auto or args.data or args.browse:
         if args.times or args.offsite:
             parser.error("-a/-d/-b work on the portal: they can't be combined "

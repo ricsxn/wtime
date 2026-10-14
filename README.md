@@ -24,7 +24,8 @@ platforms it needs a separate system package — e.g. on macOS with Homebrew:
 
 ```
 wtime T1 [T2 [T3 [T4]]]        print a report for the given clockings
-wtime T1 [T2 [T3 [T4]]] -G     same, opening the Tkinter GUI instead
+wtime T1 [T2 [T3 [T4]]] -G     same, opening the Tkinter GUI instead (detached:
+                               the prompt comes back; -f keeps it attached)
 wtime T1 [T2 [T3 [T4]]] -T     same, opening the curses terminal UI instead
 wtime T1 T2 -o                 morning-only: WORK_DURATION - (T2-T1),
                                for a day finished off-site (livelli I-III)
@@ -56,7 +57,8 @@ Other options:
 | Flag             | Meaning                                              |
 |-------------------|-------------------------------------------------------|
 | `-c, --current-time` | simulate a different current time (the simulated clock starts there and keeps ticking in `-G`/`-T`) |
-| `-G, --gui`        | open the Tkinter GUI instead of printing a report     |
+| `-G, --gui`        | open the Tkinter GUI instead of printing a report (detached, prompt returns) |
+| `-f, --foreground` | with `-G`: keep the GUI attached to the terminal       |
 | `-T, --tui`        | open the curses terminal UI instead (no Tkinter/Tk needed) |
 | `-o, --offsite`    | just `WORK_DURATION - (T2-T1)`: morning badge-clocked, rest done off-site |
 | `-a, --auto`       | fetch today's clockings from the portal (autoclocking)|
@@ -71,6 +73,16 @@ Other options:
 be combined with each other, with explicit times, or with `-o`. The one
 combination that is allowed is `-a` with `-G` or `-T` (and then also `-c`): see
 below. `-d` and `-b` can't open a UI, since they don't read the clockings.
+
+## GUI (`-G`)
+
+`wtime ... -G` starts the Tkinter window in a separate process and gives the
+prompt back right away (after about a second, during which a crash at startup
+is caught and reported). The window outlives the terminal. Since its output is
+discarded, the report the GUI normally prints on Update/Exit is not shown; use
+`-f` to keep the GUI attached to the terminal and see it. `-a -G` works the
+same way: the OTP question is asked in the terminal first, then the GUI
+detaches. The terminal UI (`-T`) always keeps the terminal, by nature.
 
 ## Terminal UI (`-T`)
 
@@ -178,8 +190,3 @@ setup.py             packaging (console_scripts entry point: wtime)
 (`python3 autoclocking.py`) for standalone testing; `wtimecli.py` is the
 normal way to use them through `wtime -a`/`wtime -d`.
 
-## Older versions
-
-Earlier, single-file versions of this tool (`wtime5.py`, `wtimegui4.py`,
-one-off `autoclocking*.py` scripts) are kept in the `legacy` branch and the
-`legacy-final` tag for reference; they are not maintained.

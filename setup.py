@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="wtime",
-    version="0.1.7",
+    version="0.1.8",
     description="INFN working-time tracker: report, GUI and portal autoclocking",
     author="Riccardo Bruno",
     author_email="riccardo.bruno@gmail.com",
