@@ -11,7 +11,7 @@ import os
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
-
+from wtimedata import ICON_PATHS
 from wtimecore import wtime
 
 __author__ = "Riccardo Bruno"
@@ -20,8 +20,6 @@ __license__ = "Apache"
 __maintainer__ = "Riccardo Bruno"
 __email__ = "riccardo.bruno@gmail.com"
 
-ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wtimeicon.png")
-print(ICON_PATH)
 
 class wtimeGUI:
 
@@ -118,7 +116,7 @@ class wtimeGUI:
         self.root.after(self.check_interval, self.check_time_gui)
         self.root.mainloop()
 
-    def set_icon(self):
+    def set_icon(self, icon='default'):
         """Use the wtime icon instead of the interpreter's default one (on
         macOS, Python.app's rocket). WTIME_ICON may point at a PNG of your own.
         An icon is never worth stopping the GUI for, so any failure just
@@ -126,8 +124,12 @@ class wtimeGUI:
         try:
             path = os.environ.get("WTIME_ICON")
             if not path:
-                from wtimedata import ICON_PATH
-                path = ICON_PATH
+                if icon == 'ticket':
+                    path = ICON_PATHS[1]
+                elif icon == 'done':
+                    path = ICON_PATHS[2]
+                else:
+                    path = ICON_PATHS[0]
             image = PhotoImage(file=path)
             self.root.iconphoto(True, image)
             self.icon_image = image  # keep a reference: Tk forgets images that get garbage-collected
@@ -308,11 +310,13 @@ class wtimeGUI:
         self.check_time()
         if "overtime" in self.wtime_out and not self.flag_time_reached:
             print(prev_out + " -> %s" % self.wtime_out)
+            self.set_icon('done')
             notify_message = "You've DONE!!!"
             self.flag_time_reached = True
             self.flag_ticket_reached = True
         elif self.wtime_out["ticket remaining"] == "reached" and not self.flag_ticket_reached:
             print(prev_out + " -> %s" % self.wtime_out)
+            self.set_icon('ticket')
             notify_message = "Ticket reached!!!"
             self.flag_ticket_reached = True
         if notify_message is not None:
