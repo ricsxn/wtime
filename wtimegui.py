@@ -7,6 +7,7 @@ a separate process (python -m wtimegui T1 [T2 [T3 [T4]]] [-c HH:MM]) so that
 the terminal prompt comes back while the window stays open.
 """
 import datetime as dt
+import os
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
@@ -19,6 +20,8 @@ __license__ = "Apache"
 __maintainer__ = "Riccardo Bruno"
 __email__ = "riccardo.bruno@gmail.com"
 
+ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wtimeicon.png")
+print(ICON_PATH)
 
 class wtimeGUI:
 
@@ -86,6 +89,7 @@ class wtimeGUI:
 
         self.root = Tk()
         self.root.title(self.winTITLE)
+        self.set_icon()
 
         self.menu = Menu(self.root)
         self.root.config(menu=self.menu)
@@ -113,6 +117,22 @@ class wtimeGUI:
         self.root.after_idle(self.root.call, 'wm', 'attributes', '.', '-topmost', False)
         self.root.after(self.check_interval, self.check_time_gui)
         self.root.mainloop()
+
+    def set_icon(self):
+        """Use the wtime icon instead of the interpreter's default one (on
+        macOS, Python.app's rocket). WTIME_ICON may point at a PNG of your own.
+        An icon is never worth stopping the GUI for, so any failure just
+        leaves the default one."""
+        try:
+            path = os.environ.get("WTIME_ICON")
+            if not path:
+                from wtimedata import ICON_PATH
+                path = ICON_PATH
+            image = PhotoImage(file=path)
+            self.root.iconphoto(True, image)
+            self.icon_image = image  # keep a reference: Tk forgets images that get garbage-collected
+        except Exception as e:
+            print("WARNING: could not set the window icon: %s" % e)
 
     def about(self):
         self.root.attributes("-topmost", True)
