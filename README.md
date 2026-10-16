@@ -84,6 +84,37 @@ discarded, the report the GUI normally prints on Update/Exit is not shown; use
 same way: the OTP question is asked in the terminal first, then the GUI
 detaches. The terminal UI (`-T`) always keeps the terminal, by nature.
 
+### Window icon and its states
+
+The GUI's icon (`wtimedata/wtimeicon.png`) changes with the day's progress, so
+you can tell at a glance from the Dock or the window list:
+
+| icon file               | when                                            |
+|-------------------------|-------------------------------------------------|
+| `wtimeicon.png`         | normal                                          |
+| `wtimeicon_ticket.png`  | the meal ticket has been reached                |
+| `wtimeicon_done.png`    | the working time is reached ("You've DONE!!!")  |
+| `wtimeicon_error.png`   | a new day started while the window was open: the figures are frozen |
+
+`WTIME_ICON=/path/to/icon.png` forces a single icon of your own for every state.
+The files are declared in `wtimedata/__init__.py` (`ICON_PATHS`) and in
+`package_data` in `setup.py`; if you add or rename one, reinstall.
+
+### Trying it without waiting
+
+`-c` starts a simulated clock at the given time and lets it run from there, so
+each state can be reached in seconds. With T1 8:00, T2 13:00, T3 13:30:
+
+```
+wtime 8:00 13:00 13:30 -c 14:29:50 -G -f   # ticket reached after ~10 s
+wtime 8:00 13:00 13:30 -c 15:41:50 -G -f   # working time reached after ~10 s
+wtime 8:00 -c 23:59:50 -G -f               # midnight crossed: new-day warning
+wtime 8:00 -c 23:59:50 -T                  # same, in the terminal UI
+```
+
+The window checks every 5 seconds, so allow up to ~15 s. `-f` keeps the GUI
+attached to the terminal so you can see what it prints.
+
 ## Terminal UI (`-T`)
 
 Same clockings/ticket/time blocks as the Tkinter GUI (`-G`), drawn with
@@ -183,10 +214,11 @@ wtimecli.py          the wtime command: argument parsing and dispatch
 portal_session.py    shared login/2FA-wait/browser-profile logic
 autoclocking.py      -a: reads today's raw clockings from the portal
 autoclocking_data.py -d: reads worked hours, tickets and trip days
+wtimedata/           non-code files shipped with the package: the GUI icons
+                     (wtimeicon*.png, see "Window icon and its states")
 setup.py             packaging (console_scripts entry point: wtime)
 ```
 
 `autoclocking.py` and `autoclocking_data.py` can also be run directly
 (`python3 autoclocking.py`) for standalone testing; `wtimecli.py` is the
 normal way to use them through `wtime -a`/`wtime -d`.
-

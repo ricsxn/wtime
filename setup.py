@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="wtime",
-    version="0.1.10",
+    version="0.1.12",
     description="INFN working-time tracker: report, GUI and portal autoclocking",
     author="Riccardo Bruno",
     author_email="riccardo.bruno@gmail.com",
@@ -19,7 +19,12 @@ setup(
     ],
     packages=["wtimedata"],
     package_data={
-        "wtimedata": ["wtimeicon.png", "wtimeicon_ticket.png", "wtimeicon_done.png"]
+        "wtimedata": [
+            "wtimeicon.png",
+            "wtimeicon_ticket.png",
+            "wtimeicon_done.png",
+            "wtimeicon_error.png"
+        ],
     },
     entry_points={
         "console_scripts": [
@@ -31,4 +36,3 @@ setup(
     ],
     python_requires=">=3.7",
 )
-

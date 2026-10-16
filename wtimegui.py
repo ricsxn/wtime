@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#i!/usr/bin/env python3
 """
 wtimegui - Tkinter GUI on top of wtimecore.wtime.
 
@@ -6,7 +6,6 @@ Normally started by the wtime command (-G). It is also what `wtime -G` runs in
 a separate process (python -m wtimegui T1 [T2 [T3 [T4]]] [-c HH:MM]) so that
 the terminal prompt comes back while the window stays open.
 """
-import datetime as dt
 import os
 from tkinter import *
 from tkinter import ttk
@@ -82,7 +81,9 @@ class wtimeGUI:
         # If the window is left open past midnight, recalculating against
         # today's date with yesterday's clockings produces meaningless
         # 24h+ deltas. Remember the day so we can notice and stop instead.
-        self.day = dt.date.today()
+        # The app's own clock decides what "today" is (the real one, or the simulated
+        # one given with -c), so crossing midnight can be tested: -c 23:59:50.
+        self.day = self.wt.now().date()
         self.flag_day_changed = False
 
         self.root = Tk()
@@ -124,12 +125,8 @@ class wtimeGUI:
         try:
             path = os.environ.get("WTIME_ICON")
             if not path:
-                if icon == 'ticket':
-                    path = ICON_PATHS[1]
-                elif icon == 'done':
-                    path = ICON_PATHS[2]
-                else:
-                    path = ICON_PATHS[0]
+                icon_index = {'ticket': 1, 'done': 2, 'error': 3}.get(icon, 0)
+                path = ICON_PATHS[icon_index]
             image = PhotoImage(file=path)
             self.root.iconphoto(True, image)
             self.icon_image = image  # keep a reference: Tk forgets images that get garbage-collected
@@ -154,12 +151,13 @@ class wtimeGUI:
             pass
 
     def is_same_day(self):
-        return dt.date.today() == self.day
+        return self.wt.now().date() == self.day
 
     def warn_day_changed(self):
         if self.flag_day_changed:
             return
         self.flag_day_changed = True
+        self.set_icon('error')
         self.show_message_box(
             "A new day has started since this window was opened: the "
             "clockings shown are from yesterday, so the figures are no "
@@ -182,6 +180,9 @@ class wtimeGUI:
         self.gui_update()
 
     def btnTx(self, *args):
+        if not self.is_same_day():
+            self.warn_day_changed()
+            return
         ts = self.wt.now_ts()  # simulated time if -c was given, else real
         if self.t2 is None:
             self.t2 = ts
@@ -308,7 +309,9 @@ class wtimeGUI:
         notify_message = None
         prev_out = "%s" % self.wtime_out
         self.check_time()
-        if "overtime" in self.wtime_out and not self.flag_time_reached:
+        if self.flag_day_changed:
+            pass
+        elif "overtime" in self.wtime_out and not self.flag_time_reached:
             print(prev_out + " -> %s" % self.wtime_out)
             self.set_icon('done')
             notify_message = "You've DONE!!!"

@@ -32,7 +32,8 @@ class wtimeTUI:
                         current_time=self.ct)
         # Same day-rollover guard as wtimegui.py: T1..T4 are anchored to
         # today's date, so recalculating after midnight would be meaningless.
-        self.day = dt.date.today()
+        # The app's own clock decides what "today" is (real, or simulated with -c).
+        self.day = self.wt.now().date()
         self.day_changed_warned = False
 
         self.out = {}
@@ -45,7 +46,7 @@ class wtimeTUI:
     # ---------- state -------------------------------------------------
 
     def is_same_day(self):
-        return dt.date.today() == self.day
+        return self.wt.now().date() == self.day
 
     def mark_next(self):
         if not self.is_same_day():
