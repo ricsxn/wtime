@@ -56,6 +56,7 @@ Other options:
 
 | Flag             | Meaning                                              |
 |-------------------|-------------------------------------------------------|
+| `-v, --version`    | print the installed version (the one in `setup.py`) and exit |
 | `-c, --current-time` | simulate a different current time (the simulated clock starts there and keeps ticking in `-G`/`-T`) |
 | `-G, --gui`        | open the Tkinter GUI instead of printing a report (detached, prompt returns) |
 | `-f, --foreground` | with `-G`: keep the GUI attached to the terminal       |
@@ -108,9 +109,12 @@ each state can be reached in seconds. With T1 8:00, T2 13:00, T3 13:30:
 ```
 wtime 8:00 13:00 13:30 -c 14:29:50 -G -f   # ticket reached after ~10 s
 wtime 8:00 13:00 13:30 -c 15:41:50 -G -f   # working time reached after ~10 s
-wtime 8:00 -c 23:59:50 -G -f               # midnight crossed: new-day warning
-wtime 8:00 -c 23:59:50 -T                  # same, in the terminal UI
+wtime 23:00 -c 23:59:50 -G -f              # midnight crossed: new-day warning
+wtime 23:00 -c 23:59:50 -T                 # same, in the terminal UI
 ```
+
+Start the midnight test from a late T1 (23:00 here): with T1 at 8:00 the day is
+already "done" at 23:59, so you would see the done icon first.
 
 The window checks every 5 seconds, so allow up to ~15 s. `-f` keeps the GUI
 attached to the terminal so you can see what it prints.
@@ -122,6 +126,25 @@ Same clockings/ticket/time blocks as the Tkinter GUI (`-G`), drawn with
 next clocking (T2, then T3, then T4), `u` refreshes immediately, `q` quits.
 It also refreshes on its own every 5 seconds, and freezes with a one-time
 warning if left open past midnight, same as `-G`.
+
+While it runs, the terminal window/tab title carries a one-line summary, so
+you can read it without focusing the window. No prefix, to keep it short; the
+percentages are the progress shown next to each bar:
+
+```
+01:42 left 76% @15:42 | ticket 00:30 91% @14:30   in progress
+00:57 left 86% @15:42 | ticket ok @14:30          ticket reached
+done +00:18 | ticket ok @14:30                    working time reached
+new day, restart                             left open past midnight
+```
+
+The percentage is left out once a threshold is reached (it would just say 100%);
+the `@time` stays, so you can still see when it happened. The ticket has no
+`@time` when a clocked pause was too short, since waiting wouldn't get it.
+The previous title is saved on start and restored on exit where the terminal
+supports it (xterm, iTerm2, most Linux terminals); where it doesn't, your shell
+usually resets it at the next prompt. Set `SET_TITLE = False` at the top of
+`wtimetui.py` to turn this off, or edit `title_text()` to change the text.
 
 ## Off-site days (`-o`)
 

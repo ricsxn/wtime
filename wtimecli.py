@@ -25,12 +25,28 @@ import time
 from wtimecore import wtime, offsite_remaining, parse_duration, fmt_delta, WORK_DURATION
 
 
+def get_version():
+    """The version declared in setup.py, as recorded in the installed package's
+    metadata (one source of truth: nothing to keep in sync by hand)."""
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+    except ImportError:          # Python < 3.8
+        return "unknown"
+    try:
+        return version("wtime")
+    except PackageNotFoundError:  # run from the sources, not installed
+        return "unknown (not installed)"
+
+
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="wtime",
         description="INFN working-time tracker: report, GUI and portal fetch.")
     parser.add_argument('times', nargs='*', metavar='Tn',
                         help="clockings in H:M[:S] format: T1 [T2 [T3 [T4]]]")
+    parser.add_argument('-v', '--version', action='version',
+                        version='%(prog)s ' + get_version(),
+                        help="print the installed version (the one in setup.py) and exit")
     parser.add_argument('-c', '--current-time', metavar='HH:MM[:SS]',
                         help="simulate a different current time")
     parser.add_argument('-G', '--gui', action='store_true',
