@@ -11,6 +11,8 @@ Keys: [t] mark next clocking (T2/T3/T4)  [u] refresh now  [q] quit
 """
 import curses
 import datetime as dt
+import re
+import sys
 
 from wtimecore import wtime
 
@@ -22,6 +24,7 @@ __email__ = "riccardo.bruno@gmail.com"
 
 REFRESH_SECONDS = 5
 BAR_WIDTH = 20
+SET_TITLE = True   # show a status summary in the terminal window/tab title
 
 
 class wtimeTUI:
@@ -42,6 +45,7 @@ class wtimeTUI:
         self.flag_time_reached = False
         self.flag_ticket_reached = False
         self.has_color = False  # set in run(), if the terminal supports it
+        self.last_title = None
 
     # ---------- state -------------------------------------------------
 
@@ -89,6 +93,70 @@ class wtimeTUI:
         elif self.out.get("ticket remaining") == "reached" and not self.flag_ticket_reached:
             self.flag_ticket_reached = True
             self.status = "Ticket reached!!!"
+
+    # ---------- terminal title --------------------------------------------
+
+    @staticmethod
+    def _hm(value):
+        """'HH:MM:SS' -> 'HH:MM': a title is narrow, and seconds would only flicker."""
+        return value[:5] if value else "--:--"
+
+    @staticmethod
+    def _pct(value):
+        """Progress percentage, truncated like the GUI does ('%d')."""
+        try:
+            return "%d%%" % max(0, min(100, int(value)))
+        except (TypeError, ValueError):
+            return ""
+
+    def title_text(self):
+        """One-line summary for the window/tab title, readable without focusing
+        the terminal. No "wtime" prefix: tab titles are narrow. A percentage is
+        shown only while a threshold is still ahead (it is 100% once reached);
+        the @time stays after it.
+        Edit here to change what it says."""
+        if self.day_changed_warned:
+            return "❌ new day, restart"
+        out = self.out
+        if not out or 'error' in out:
+            return "(!)"
+        if "overtime" in out:
+            work = "🕐︎ done +%s" % self._hm(out["overtime"])
+        else:
+            work = "🕐︎ %s %s @%s" % (self._hm(out.get("time remaining")),
+                                           self._pct(out.get("time remaining perc")),
+                                           self._hm(out.get("time remaining at")))
+        ticket = out.get("ticket remaining", "")          # ← original key
+        if ticket == "reached":
+            ticket = "🏷  reached"
+        elif ticket.startswith("pause too short"):
+            ticket = "🏷  NO (short pause)"
+        else:
+            ticket = "🏷  %s %s" % (self._hm(ticket),
+                                     self._pct(out.get("ticket remaining perc")))
+        if out.get("ticket remaining at"):                # ← original key
+            ticket += " @%s" % self._hm(out["ticket remaining at"])
+        return "%s %s" % (work, ticket)
+
+    @staticmethod
+    def _write_tty(seq):
+        if SET_TITLE and sys.stdout.isatty():
+            sys.stdout.write(seq)
+            sys.stdout.flush()
+
+    def set_title(self, text):
+        # OSC 0 sets the window/tab title; control characters are stripped so a
+        # stray byte can never end the sequence early.
+        text = re.sub(r"[\x00-\x1f\x7f]", "", text)
+        if text != self.last_title:
+            self.last_title = text
+            self._write_tty("\033]0;%s\007" % text)
+
+    def push_title(self):
+        self._write_tty("\033[22;0t")   # save the current title (xterm stack)
+
+    def pop_title(self):
+        self._write_tty("\033[23;0t")   # restore it, where the terminal supports it
 
     # ---------- rendering -----------------------------------------------
 
@@ -199,6 +267,7 @@ class wtimeTUI:
         self.update()
         while True:
             self.render(stdscr)
+            self.set_title(self.title_text())
             ch = stdscr.getch()
             if ch in (ord('q'), ord('Q')):
                 break
@@ -214,7 +283,11 @@ class wtimeTUI:
 
 def main(t1=None, t2=None, t3=None, t4=None, current_time=None):
     tui = wtimeTUI(t1=t1, t2=t2, t3=t3, t4=t4, current_time=current_time)
-    curses.wrapper(tui.run)
+    tui.push_title()
+    try:
+        curses.wrapper(tui.run)
+    finally:
+        tui.pop_title()
 
 
 if __name__ == "__main__":
